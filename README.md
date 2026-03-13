@@ -88,26 +88,41 @@ OSS-Project/
 commit message 형식은 아래와 같이 통일합니다.
 
 ```text
-type: 변경 내용
+[파트] Type: 변경 내용
 ```
 
-### 사용 가능한 type
-- `feat` : 새로운 기능 추가
-- `fix` : 버그 수정
-- `docs` : 문서 수정
-- `style` : 코드 스타일 수정(기능 변화 없음)
-- `refactor` : 리팩토링
-- `test` : 테스트 코드 추가/수정
-- `chore` : 설정, 폴더 정리, 기타 작업
-- `init` : 초기 세팅
+### 파트 구분
+- `[AI]` : AI 관련 작업
+- `[BE]` : 백엔드 관련 작업
+- `[FE]` : 프론트엔드 관련 작업
+
+### 사용 가능한 Type
+- `Feat` : 새로운 기능 구현  
+  예) 이미지 업로드, 알림 발송
+- `Fix` : 버그 및 오류 수정
+- `Design` : UI/UX 디자인 수정  
+  예) React 컴포넌트 스타일링
+- `AI` : 데이터셋 처리, 모델 학습, 성능 평가 관련 작업
+- `Refactor` : 코드 로직 개선  
+  기능 변화는 없지만 코드 품질 향상
+- `Docs` : 문서 작성 및 수정  
+  예) README, 회의록, API 명세서
+- `Chore` : 빌드 설정, 패키지 설치, 환경 변수 설정 등 단순 작업
+- `Test` : 테스트 코드 작성 및 검증
 
 ### 예시
 ```text
-init: 프로젝트 초기 세팅
-feat: 사용자 입력 기능 추가
-fix: main.py 실행 오류 수정
-docs: README 실행 방법 추가
-refactor: 함수 분리로 코드 구조 개선
+[BE] Feat: 회원정보 저장 기능 추가
+[FE] Feat: 사용자 기간 입력 기능 추가
+[BE] Feat: 사용자 로그인 기능 추가
+[BE] Feat: 사용자 회원가입 기능 추가
+[FE] Design: 메인 화면 버튼 스타일 수정
+[AI] AI: 데이터 전처리 코드 추가
+[BE] Fix: 로그인 예외 처리 오류 수정
+[FE] Docs: README 실행 방법 수정
+[BE] Refactor: 회원가입 함수 분리
+[FE] Test: 입력 폼 검증 테스트 추가
+[BE] Chore: requirements.txt 패키지 정리
 ```
 
 ---
@@ -117,7 +132,7 @@ refactor: 함수 분리로 코드 구조 개선
 - `main` 브랜치에는 직접 commit하지 않습니다.
 - 모든 작업은 `dev` 브랜치에서 분기한 작업 브랜치에서 진행합니다.
 - 작업 브랜치 이름은 `type/name/task` 형식을 따릅니다.
-- commit 메시지는 팀 convention을 따릅니다.
+- commit 메시지는 `[파트] Type: 변경 내용` 형식을 따릅니다.
 - merge 전 코드 및 변경 사항을 확인합니다.
 - 의미 없는 commit 메시지(`수정`, `업데이트`, `test`)는 지양합니다.
 
