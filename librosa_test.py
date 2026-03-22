@@ -1,7 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import librosa, librosa.display
-
+# For librosa library reference:
+# https://librosa.org/doc/latest/index.html
 
 # Testing numpy / matplotlib
 """
@@ -22,8 +23,10 @@ plt.legend();plt.grid();plt.show()
 #%% Testing librosa with test_data/test.mp3
 
 # Load audio file with librosa package
-file = "test_data/test_dist.wav"
-signal, sample_rate = librosa.load(file, sr = None, mono = True)
+# NOTE: original sample rate of test file is 44100 (44.1kHz)
+#       Also, 44100 is common sample rate for most of audio file
+file = "test_data/test_drive.wav"
+signal, sample_rate = librosa.load(file, sr = 44100, mono = True)
 
 #%% Draw waveform of audio as simple sin-wave graph
 FIG_SIZE = (12, 5)
@@ -69,6 +72,23 @@ img = librosa.display.specshow(
     Y_log_scale, sr=sample_rate, hop_length=HOP_SIZE,
     x_axis="time", y_axis="log")
 plt.title("Log-scaled spectrogram (amplitude/frequency)")
+plt.colorbar(format="%+2.f dB")
+
+plt.show()
+
+
+#%% Draw Mel-spectogram of audio
+# Mel-spectogram: Spectogram that Frequency is transformed into Mel-scale
+# Mel-scale: pitch scale based on human listening feature
+# FYI: https://medium.com/analytics-vidhya/understanding-the-mel-spectrogram-fca2afa2ce53
+
+# Scale into Mel-scale
+M_scale = librosa.feature.melspectrogram(S=Y_scale, sr=sample_rate)
+M_log_scale = librosa.power_to_db(M_scale, ref=np.max)
+
+plt.figure(figsize=FIG_SIZE)
+img = librosa.display.specshow(M_log_scale, sr=sample_rate, x_axis="time", y_axis="mel")
+plt.title("Mel-spectrogram")
 plt.colorbar(format="%+2.f dB")
 
 plt.show()
