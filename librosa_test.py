@@ -25,7 +25,7 @@ plt.legend();plt.grid();plt.show()
 # Load audio file with librosa package
 # NOTE: original sample rate of test file is 44100 (44.1kHz)
 #       Also, 44100 is common sample rate for most of audio file
-file = "test_data/test_drive.wav"
+file = "test_data/test_clean_solo_3.wav"
 signal, sample_rate = librosa.load(file, sr = 44100, mono = True)
 
 #%% Draw waveform of audio as simple sin-wave graph
@@ -34,7 +34,7 @@ plt.figure(figsize=FIG_SIZE)
 librosa.display.waveshow(signal, sr = sample_rate, alpha = 0.5)
 plt.xlabel("Time (s)")
 plt.ylabel("Amplitude")
-plt.title("Original waveform")
+plt.title("Original waveform" + "\n" + file)
 plt.show()
 
 #%% Draw Spectogram of audio
@@ -71,7 +71,7 @@ plt.figure(figsize=FIG_SIZE)
 img = librosa.display.specshow(
     Y_log_scale, sr=sample_rate, hop_length=HOP_SIZE,
     x_axis="time", y_axis="log")
-plt.title("Log-scaled spectrogram (amplitude/frequency)")
+plt.title("Log-scaled spectrogram (amplitude/frequency)" + "\n" + file)
 plt.colorbar(format="%+2.f dB")
 
 plt.show()
@@ -88,7 +88,7 @@ M_log_scale = librosa.power_to_db(M_scale, ref=np.max)
 
 plt.figure(figsize=FIG_SIZE)
 img = librosa.display.specshow(M_log_scale, sr=sample_rate, x_axis="time", y_axis="mel")
-plt.title("Mel-spectrogram")
+plt.title("Mel-spectrogram" + "\n" + file)
 plt.colorbar(format="%+2.f dB")
 
 plt.show()
