@@ -25,7 +25,7 @@ plt.legend();plt.grid();plt.show()
 # Load audio file with librosa package
 # NOTE: original sample rate of test file is 44100 (44.1kHz)
 #       Also, 44100 is common sample rate for most of audio file
-file = "test_data/test_clean_solo_3.wav"
+file = "test_effector/test_clean_solo_3.wav"
 signal, sample_rate = librosa.load(file, sr = 44100, mono = True)
 
 #%% Draw waveform of audio as simple sin-wave graph

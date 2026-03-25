@@ -1,5 +1,6 @@
-librosa
-spleeter
+librosa - audio/music processing
+spleeter / Demucs - separate sound source
+torch - calculator for Demucs
 numpy
 scipy
 matplotlib
