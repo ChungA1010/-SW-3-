@@ -1,1 +1,4 @@
-extract_test/env/
+extract_test/env/
+extract_test/test_demucs/test_1.mp3
+extract_test/test_demucs/test_2.mp3
+extract_test/test_demucs/separated_stems/htdemucs/
