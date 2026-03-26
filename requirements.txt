@@ -1,6 +1,7 @@
 librosa - audio/music processing
 spleeter / Demucs - separate sound source
 torch - calculator for Demucs
+yt-dlp - extract wav file from youtube link. using only for testing
 numpy
 scipy
 matplotlib

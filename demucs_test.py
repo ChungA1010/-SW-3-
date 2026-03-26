@@ -14,7 +14,8 @@ model.to(device) # move model to selected device
 model.eval()
 
 # Load audio file
-y, sr = librosa.load("test_data/_original.wav", sr=44100, mono=False)
+y, sr = librosa.load("test_separation/_original.wav", sr=44100, mono=False)
+y = y[:,44100*30:44100*90] # Use only 30s-90s part for testing (since separation takes time)
 wav = torch.tensor(y)
 
 # Make audio stereo if mono
