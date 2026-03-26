@@ -1,6 +1,6 @@
 import yt_dlp
 
-url = "https://youtu.be/Z5sx7Zj5gKE?si=L5qplvbrQ5pnSuTT"
+url = "https://youtu.be/7Bnir0BL1S4?si=8zv2atZ5Dv20iaws"
 
 ydl_opts = {
     'format': 'bestaudio/best',

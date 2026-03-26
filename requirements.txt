@@ -1,7 +1,12 @@
 librosa - audio/music processing
 spleeter / Demucs - separate sound source
 torch - calculator for Demucs
+    NOTE: torch must be cuda version so that we can use GPU.
+          or we can run it on google colab.
+          pip install torch==2.10.0 torchvision==0.25.0 torchaudio==2.10.0 --index-url https://download.pytorch.org/whl/cu130
 yt-dlp - extract wav file from youtube link. using only for testing
 numpy
 scipy
 matplotlib
+
+ffmpeg - audio/video convert framework. need to be installed in environment separately, not by pip
