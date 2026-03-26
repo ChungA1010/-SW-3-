@@ -360,6 +360,14 @@ function formatClock(progress: number, durationInSeconds: number) {
   return `${String(minutes).padStart(2, "0")}:${String(remaining).padStart(2, "0")}`;
 }
 
+function summarizeText(value: string, maxLength: number) {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, Math.max(0, maxLength - 3))}...`;
+}
+
 export default function MusicAnalysisMainPage() {
   const [selectedArchiveId, setSelectedArchiveId] = useState(archiveItems[2].id);
   const [selectedInstrument, setSelectedInstrument] = useState<InstrumentKey>("기타");
@@ -877,49 +885,43 @@ function ArchiveSection({
           const isSelected = item.id === selectedArchiveId;
 
           return (
-            <article
-              key={item.id}
-              className={`group overflow-hidden rounded-[28px] border bg-white/5 transition ${
-                isSelected
-                  ? "border-fuchsia-300/40 ring-1 ring-fuchsia-300/20"
-                  : "border-white/10"
-              }`}
-            >
-              <div className="relative h-[420px] overflow-hidden">
-                <Image
-                  fill
-                  alt={item.title}
-                  className="object-cover transition duration-500 group-hover:scale-105"
-                  sizes="(max-width: 1024px) 100vw, 33vw"
-                  src={item.image}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0d0f12] via-[#0d0f12]/20 to-transparent" />
-                <div className="absolute left-0 right-0 top-0 flex items-center justify-between p-6">
-                  <span className="inline-flex rounded-full border border-white/15 bg-black/20 px-3 py-1 text-xs uppercase tracking-[0.24em] text-white/58 backdrop-blur">
-                    SAMPLE
-                  </span>
-                  {isSelected ? (
-                    <span className="rounded-full border border-fuchsia-300/30 bg-fuchsia-300/12 px-3 py-1 text-xs text-fuchsia-100">
-                      선택됨
-                    </span>
-                  ) : null}
+            <article key={item.id}>
+              <button
+                type="button"
+                aria-label={`${item.title} 샘플 보기`}
+                onClick={() => onPreviewArchive(item.id)}
+                className={`group block w-full overflow-hidden rounded-[28px] border bg-white/5 text-left transition ${
+                  isSelected
+                    ? "border-fuchsia-300/40 ring-1 ring-fuchsia-300/20"
+                    : "border-white/10"
+                }`}
+              >
+                <div className="relative h-[420px] overflow-hidden">
+                  <Image
+                    fill
+                    alt={item.title}
+                    className="object-cover transition duration-500 group-hover:scale-105"
+                    sizes="(max-width: 1024px) 100vw, 33vw"
+                    src={item.image}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0d0f12] via-[#0d0f12]/20 to-transparent" />
+                  <div className="absolute left-0 right-0 top-0 flex items-center justify-end p-6">
+                    {isSelected ? (
+                      <span className="rounded-full border border-fuchsia-300/30 bg-fuchsia-300/12 px-3 py-1 text-xs text-fuchsia-100">
+                        선택됨
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-7">
+                    <h3 className="text-2xl font-medium text-white">{item.title}</h3>
+                    <p className="mt-2 text-sm text-white/68">{item.artist}</p>
+                    <p className="mt-4 text-sm text-white/58">{item.genre}</p>
+                    <p className="mt-2 text-sm leading-6 text-fuchsia-100/78">
+                      {item.focus}
+                    </p>
+                  </div>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 p-7">
-                  <h3 className="text-2xl font-medium text-white">{item.title}</h3>
-                  <p className="mt-2 text-sm text-white/68">{item.artist}</p>
-                  <p className="mt-4 text-sm text-white/58">{item.genre}</p>
-                  <p className="mt-2 text-sm leading-6 text-fuchsia-100/78">
-                    {item.focus}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => onPreviewArchive(item.id)}
-                    className="mt-5 rounded-full border border-white/15 bg-black/25 px-4 py-2 text-sm text-white/88 transition hover:border-white/30 hover:text-white"
-                  >
-                    이 샘플 보기
-                  </button>
-                </div>
-              </div>
+              </button>
             </article>
           );
         })}
@@ -1329,6 +1331,11 @@ function DialogShell({
   children: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -1345,7 +1352,7 @@ function DialogShell({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -1371,7 +1378,7 @@ function DialogShell({
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onClose]);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-md sm:px-6 lg:px-10">
@@ -1491,35 +1498,37 @@ function AnalysisRequestDialog({
             })}
           </div>
 
-          <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-white">워크스페이스 기준 샘플</p>
-              <span className="text-xs uppercase tracking-[0.24em] text-white/40">
-                Layout Anchor
-              </span>
-            </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              {archiveItems.map((item) => {
-                const isActive = item.id === draft.archiveId;
+          {draft.sourceMode === "sample" ? (
+            <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-white">워크스페이스 기준 샘플</p>
+                <span className="text-xs uppercase tracking-[0.24em] text-white/40">
+                  Layout Anchor
+                </span>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {archiveItems.map((item) => {
+                  const isActive = item.id === draft.archiveId;
 
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => onArchiveChange(item.id)}
-                    className={`rounded-[22px] border px-4 py-4 text-left transition ${
-                      isActive
-                        ? "border-fuchsia-300/30 bg-fuchsia-400/10"
-                        : "border-white/10 bg-[#0d0f12]"
-                    }`}
-                  >
-                    <p className="text-sm font-medium text-white">{item.title}</p>
-                    <p className="mt-2 text-xs leading-5 text-white/48">{item.focus}</p>
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onArchiveChange(item.id)}
+                      className={`rounded-[22px] border px-4 py-4 text-left transition ${
+                        isActive
+                          ? "border-fuchsia-300/30 bg-fuchsia-400/10"
+                          : "border-white/10 bg-[#0d0f12]"
+                      }`}
+                    >
+                      <p className="text-sm font-medium text-white">{item.title}</p>
+                      <p className="mt-2 text-xs leading-5 text-white/48">{item.focus}</p>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          ) : null}
 
           {draft.sourceMode === "upload" ? (
             <label className="block rounded-[28px] border border-dashed border-white/14 bg-white/[0.03] p-6 text-left transition hover:border-fuchsia-300/30">
@@ -1568,44 +1577,42 @@ function AnalysisRequestDialog({
             </div>
           ) : null}
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="text-sm font-medium text-white" htmlFor="session-title">
-                세션 제목
-              </label>
-              <input
-                id="session-title"
-                type="text"
-                value={draft.title}
-                onChange={(event) => onTitleChange(event.target.value)}
-                placeholder={selectedTitle}
-                className="mt-3 w-full rounded-2xl border border-white/10 bg-[#0d0f12] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/28 focus:border-fuchsia-300/40"
-              />
-            </div>
+          <div>
+            <label className="text-sm font-medium text-white" htmlFor="session-title">
+              세션 제목
+            </label>
+            <input
+              id="session-title"
+              type="text"
+              value={draft.title}
+              onChange={(event) => onTitleChange(event.target.value)}
+              placeholder={selectedTitle}
+              className="mt-3 w-full rounded-2xl border border-white/10 bg-[#0d0f12] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/28 focus:border-fuchsia-300/40"
+            />
+          </div>
 
-            <div>
-              <p className="text-sm font-medium text-white">출력 옵션</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {analysisOptions.map((option) => {
-                  const isSelected = draft.options.includes(option);
+          <div>
+            <p className="text-sm font-medium text-white">출력 옵션</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {analysisOptions.map((option) => {
+                const isSelected = draft.options.includes(option);
 
-                  return (
-                    <button
-                      key={option}
-                      type="button"
-                      aria-pressed={isSelected}
-                      onClick={() => onToggleOption(option)}
-                      className={`rounded-full border px-4 py-2 text-sm transition ${
-                        isSelected
-                          ? "border-fuchsia-300/30 bg-fuchsia-400/12 text-fuchsia-100"
-                          : "border-white/10 bg-white/[0.03] text-white/62 hover:text-white"
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  );
-                })}
-              </div>
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => onToggleOption(option)}
+                    className={`rounded-full border px-4 py-2 text-sm transition ${
+                      isSelected
+                        ? "border-fuchsia-300/30 bg-fuchsia-400/12 text-fuchsia-100"
+                        : "border-white/10 bg-white/[0.03] text-white/62 hover:text-white"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -1651,34 +1658,93 @@ function AnalysisRequestDialog({
         </form>
 
         <div className="space-y-5">
-          <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[#0d0f12]">
-            <div className="relative h-[220px]">
-              <Image
-                fill
-                alt={requestArchive.title}
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 30vw"
-                src={requestArchive.image}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0d0f12] via-[#0d0f12]/20 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-6">
-                <p className="text-xs uppercase tracking-[0.24em] text-white/46">
-                  Target Workspace
-                </p>
-                <h3 className="mt-2 text-2xl font-medium text-white">
-                  {selectedTitle}
-                </h3>
-                <p className="mt-2 text-sm text-white/62">
-                  {requestArchive.artist} · {requestArchive.genre}
-                </p>
+          {draft.sourceMode === "sample" ? (
+            <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[#0d0f12]">
+              <div className="relative h-[220px]">
+                <Image
+                  fill
+                  alt={requestArchive.title}
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 30vw"
+                  src={requestArchive.image}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0d0f12] via-[#0d0f12]/20 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <p className="text-xs uppercase tracking-[0.24em] text-white/46">
+                    Target Workspace
+                  </p>
+                  <h3 className="mt-2 text-2xl font-medium text-white">
+                    {selectedTitle}
+                  </h3>
+                  <p className="mt-2 text-sm text-white/62">
+                    {requestArchive.artist} · {requestArchive.genre}
+                  </p>
+                </div>
+              </div>
+              <div className="grid gap-0 border-t border-white/10 sm:grid-cols-3">
+                <DetailCell label="Anchor" value={requestArchive.title} />
+                <DetailCell
+                  label="Instrument"
+                  value={requestArchive.recommendedInstrument}
+                />
+                <DetailCell label="Outputs" value={`${draft.options.length}개`} />
               </div>
             </div>
-            <div className="grid gap-0 border-t border-white/10 sm:grid-cols-3">
-              <DetailCell label="Anchor" value={requestArchive.title} />
-              <DetailCell label="Instrument" value={requestArchive.recommendedInstrument} />
-              <DetailCell label="Outputs" value={`${draft.options.length}개`} />
+          ) : (
+            <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[#0d0f12]">
+              <div className="border-b border-white/10 p-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-fuchsia-400/10 text-fuchsia-100">
+                    {draft.sourceMode === "upload" ? (
+                      <Upload className="h-5 w-5" />
+                    ) : (
+                      <Link2 className="h-5 w-5" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.24em] text-white/46">
+                      {draft.sourceMode === "upload" ? "Upload Source" : "Linked Source"}
+                    </p>
+                    <h3 className="mt-2 text-2xl font-medium text-white">
+                      {selectedTitle ||
+                        (draft.sourceMode === "upload"
+                          ? "업로드할 음원"
+                          : "연결할 음원 링크")}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-white/58">
+                      {draft.sourceMode === "upload"
+                        ? "샘플 기준 없이 현재 파일 자체를 작업 시작점으로 사용합니다."
+                        : "샘플 기준 없이 현재 링크 자체를 작업 시작점으로 사용합니다."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="grid gap-0 border-t border-white/10 sm:grid-cols-3">
+                <DetailCell
+                  label="Source"
+                  value={
+                    draft.sourceMode === "upload"
+                      ? summarizeText(draft.file?.name ?? "파일 선택 전", 32)
+                      : summarizeText(
+                          draft.sourceLink.trim() || "링크 입력 전",
+                          40,
+                        )
+                  }
+                  title={
+                    draft.sourceMode === "upload"
+                      ? draft.file?.name ?? "파일 선택 전"
+                      : draft.sourceLink.trim() || "링크 입력 전"
+                  }
+                  truncate
+                />
+                <DetailCell
+                  label="Mode"
+                  value={draft.sourceMode === "upload" ? "파일 업로드" : "링크 입력"}
+                />
+                <DetailCell label="Outputs" value={`${draft.options.length}개`} />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="rounded-[30px] border border-white/10 bg-white/[0.03] p-6">
             <div className="flex items-center justify-between">
@@ -1790,11 +1856,26 @@ function AnalysisRequestDialog({
   );
 }
 
-function DetailCell({ label, value }: { label: string; value: string }) {
+function DetailCell({
+  label,
+  value,
+  title,
+  truncate = false,
+}: {
+  label: string;
+  value: string;
+  title?: string;
+  truncate?: boolean;
+}) {
   return (
     <div className="border-t border-white/10 px-5 py-4 sm:border-l sm:border-t-0 first:sm:border-l-0">
       <p className="text-[11px] uppercase tracking-[0.24em] text-white/38">{label}</p>
-      <p className="mt-2 text-sm text-white/70">{value}</p>
+      <p
+        title={title}
+        className={`mt-2 text-sm text-white/70 ${truncate ? "truncate" : ""}`}
+      >
+        {value}
+      </p>
     </div>
   );
 }
