@@ -5,8 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   type ChangeEvent,
+  type CSSProperties,
   type FormEvent,
   type ReactNode,
+  type RefObject,
   useEffect,
   useMemo,
   useRef,
@@ -438,6 +440,11 @@ const primaryNav: { key: Exclude<PageKey, "home">; label: string; href: string }
   { key: "compare", label: "비교분석", href: "/compare" },
 ];
 
+const pageRouteSequence: { key: PageKey; href: string }[] = [
+  { key: "home", href: "/" },
+  ...primaryNav,
+];
+
 const workspacePages: { key: Extract<PageKey, "instruments" | "score" | "effects" | "compare">; label: string; href: string; description: string }[] = [
   {
     key: "instruments",
@@ -465,11 +472,99 @@ const workspacePages: { key: Extract<PageKey, "instruments" | "score" | "effects
   },
 ];
 
+function useRevealOnce<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  const [isVisible, setIsVisible] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+
+  useEffect(() => {
+    const element = ref.current;
+
+    if (!element || isVisible) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+
+        if (!entry?.isIntersecting) {
+          return;
+        }
+
+        setIsVisible(true);
+        observer.disconnect();
+      },
+      {
+        threshold: 0.18,
+        rootMargin: "0px 0px -12% 0px",
+      },
+    );
+
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [isVisible]);
+
+  return { ref, isVisible };
+}
+
+function getRevealItemStyle(index: number, baseDelay = 110): CSSProperties {
+  return {
+    transitionDelay: `${baseDelay + index * 85}ms`,
+  };
+}
+
+function isInteractiveWheelTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  return Boolean(
+    target.closest(
+      'input, textarea, select, button, a, summary, [role="dialog"], [contenteditable="true"]',
+    ),
+  );
+}
+
+function RevealItem({
+  children,
+  className = "",
+  index,
+  isVisible,
+  hoverLift = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  index: number;
+  isVisible: boolean;
+  hoverLift?: boolean;
+}) {
+  return (
+    <div
+      className={`motion-safe:transform-gpu motion-safe:will-change-transform transition-[opacity,transform] duration-[720ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        isVisible ? "translate-y-0 opacity-100" : "translate-y-7 opacity-0"
+      } ${hoverLift ? "motion-safe:hover:-translate-y-1.5" : ""} ${className}`}
+      style={getRevealItemStyle(index)}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function MusicArchiveExperience({ page }: { page: PageKey }) {
   const router = useRouter();
+  const headerRef = useRef<HTMLElement | null>(null);
+  const lastHorizontalNavigationAtRef = useRef(0);
   const [selectedArchiveId, setSelectedArchiveId] = useState(archiveItems[2].id);
   const [hoveredArchiveId, setHoveredArchiveId] = useState<string | null>(null);
   const [archiveSpotlightId, setArchiveSpotlightId] = useState(archiveItems[0].id);
+  const [leadViewportHeight, setLeadViewportHeight] = useState(0);
   const [selectedInstrument, setSelectedInstrument] = useState<InstrumentKey>("기타");
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
   const [requestDraft, setRequestDraft] = useState<RequestDraft>(() =>
@@ -505,6 +600,14 @@ export function MusicArchiveExperience({ page }: { page: PageKey }) {
     () => getArchiveById(archiveSpotlightId),
     [archiveSpotlightId],
   );
+  const layoutViewportStyle = useMemo<CSSProperties>(
+    () => ({
+      ["--lead-viewport-height" as string]: leadViewportHeight
+        ? `${leadViewportHeight}px`
+        : "calc(100dvh - 88px)",
+    }),
+    [leadViewportHeight],
+  );
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -515,6 +618,35 @@ export function MusicArchiveExperience({ page }: { page: PageKey }) {
 
     return () => {
       window.clearTimeout(timeoutId);
+    };
+  }, []);
+
+  useEffect(() => {
+    const updateLeadViewportHeight = () => {
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      const headerHeight = headerRef.current?.getBoundingClientRect().height ?? 0;
+      setLeadViewportHeight(Math.max(Math.round(viewportHeight - headerHeight), 560));
+    };
+
+    updateLeadViewportHeight();
+
+    const headerObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(updateLeadViewportHeight);
+
+    if (headerRef.current && headerObserver) {
+      headerObserver.observe(headerRef.current);
+    }
+
+    const visualViewport = window.visualViewport;
+    window.addEventListener("resize", updateLeadViewportHeight);
+    visualViewport?.addEventListener("resize", updateLeadViewportHeight);
+
+    return () => {
+      window.removeEventListener("resize", updateLeadViewportHeight);
+      visualViewport?.removeEventListener("resize", updateLeadViewportHeight);
+      headerObserver?.disconnect();
     };
   }, []);
 
@@ -572,6 +704,56 @@ export function MusicArchiveExperience({ page }: { page: PageKey }) {
       window.clearInterval(intervalId);
     };
   }, [comparePreview.isPlaying, comparePreview.open]);
+
+  useEffect(() => {
+    const currentPageIndex = pageRouteSequence.findIndex((item) => item.key === page);
+
+    if (currentPageIndex === -1) {
+      return;
+    }
+
+    const handleWheel = (event: WheelEvent) => {
+      if (requestDialogOpen || samplePreviewId || comparePreview.open) {
+        return;
+      }
+
+      if (isInteractiveWheelTarget(event.target)) {
+        return;
+      }
+
+      const horizontalDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY) * 1.15
+        ? event.deltaX
+        : event.shiftKey
+          ? event.deltaY
+          : 0;
+
+      if (Math.abs(horizontalDelta) < 48) {
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastHorizontalNavigationAtRef.current < 850) {
+        return;
+      }
+
+      const nextIndex =
+        horizontalDelta > 0 ? currentPageIndex + 1 : currentPageIndex - 1;
+      const targetRoute = pageRouteSequence[nextIndex];
+
+      if (!targetRoute) {
+        return;
+      }
+
+      lastHorizontalNavigationAtRef.current = now;
+      router.push(targetRoute.href);
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: true });
+
+    return () => {
+      window.removeEventListener("wheel", handleWheel);
+    };
+  }, [comparePreview.open, page, requestDialogOpen, router, samplePreviewId]);
 
   const resetRequestDialogState = () => {
     setRequestStatus("editing");
@@ -740,18 +922,7 @@ export function MusicArchiveExperience({ page }: { page: PageKey }) {
       { label: "Anchor", value: selectedArchive.title },
       { label: "Pipeline", value: `${requestStages.length} steps` },
     ];
-    pageActions = (
-      <>
-        <button
-          type="button"
-          onClick={() => openRequestDialog("sample", selectedArchive.id)}
-          className="rounded-full bg-white px-6 py-3 text-sm font-medium text-[#0f1113] transition hover:bg-white/92"
-        >
-          분석 요청 열기
-        </button>
-        <QuickActionLink href="/effects" label="이펙터 페이지 보기" />
-      </>
-    );
+    pageActions = null;
     pageContent = (
       <>
         <PageLead
@@ -774,18 +945,7 @@ export function MusicArchiveExperience({ page }: { page: PageKey }) {
       { label: "Active Part", value: selectedInstrument },
       { label: "Artist", value: selectedArchive.artist },
     ];
-    pageActions = (
-      <>
-        <button
-          type="button"
-          onClick={() => openRequestDialog("sample", selectedArchive.id)}
-          className="rounded-full bg-white px-6 py-3 text-sm font-medium text-[#0f1113] transition hover:bg-white/92"
-        >
-          다른 소스로 바꾸기
-        </button>
-        <QuickActionLink href="/score" label="악보 페이지로 이동" />
-      </>
-    );
+    pageActions = null;
     pageContent = (
       <>
         <PageLead
@@ -813,18 +973,7 @@ export function MusicArchiveExperience({ page }: { page: PageKey }) {
       { label: "Notation", value: selectedInstrument },
       { label: "Timeline", value: selectedArchive.durationLabel },
     ];
-    pageActions = (
-      <>
-        <button
-          type="button"
-          onClick={() => openRequestDialog("sample", selectedArchive.id)}
-          className="rounded-full bg-white px-6 py-3 text-sm font-medium text-[#0f1113] transition hover:bg-white/92"
-        >
-          세션 다시 설정
-        </button>
-        <QuickActionLink href="/effects" label="이펙터 페이지로 이동" />
-      </>
-    );
+    pageActions = null;
     pageContent = (
       <>
         <PageLead
@@ -852,18 +1001,7 @@ export function MusicArchiveExperience({ page }: { page: PageKey }) {
       { label: "Profile", value: selectedInstrument },
       { label: "Similarity", value: selectedArchive.similarity.toFixed(2) },
     ];
-    pageActions = (
-      <>
-        <button
-          type="button"
-          onClick={() => openRequestDialog("sample", selectedArchive.id)}
-          className="rounded-full bg-white px-6 py-3 text-sm font-medium text-[#0f1113] transition hover:bg-white/92"
-        >
-          소스 다시 고르기
-        </button>
-        <QuickActionLink href="/compare" label="비교 페이지로 이동" />
-      </>
-    );
+    pageActions = null;
     pageContent = (
       <>
         <PageLead
@@ -890,18 +1028,7 @@ export function MusicArchiveExperience({ page }: { page: PageKey }) {
       { label: "Similarity", value: selectedArchive.similarity.toFixed(2) },
       { label: "Compare", value: "A/B Ready" },
     ];
-    pageActions = (
-      <>
-        <button
-          type="button"
-          onClick={() => openRequestDialog("sample", selectedArchive.id)}
-          className="rounded-full bg-white px-6 py-3 text-sm font-medium text-[#0f1113] transition hover:bg-white/92"
-        >
-          다른 세션 준비
-        </button>
-        <QuickActionLink href="/instruments" label="악기별 탐색으로 이동" />
-      </>
-    );
+    pageActions = null;
     pageContent = (
       <>
         <PageLead
@@ -923,8 +1050,15 @@ export function MusicArchiveExperience({ page }: { page: PageKey }) {
 
   return (
     <>
-      <main className="min-h-screen bg-[#0d0f12] text-white">
-        <Header activePage={page} onStart={() => openRequestDialog("sample")} />
+      <main
+        className="min-h-screen bg-[#0d0f12] text-white"
+        style={layoutViewportStyle}
+      >
+        <Header
+          activePage={page}
+          headerRef={headerRef}
+          onStart={() => openRequestDialog("sample")}
+        />
         {pageContent}
         <Footer onStart={() => openRequestDialog("sample")} />
       </main>
@@ -1021,13 +1155,18 @@ export default MusicArchiveExperience;
 
 function Header({
   activePage,
+  headerRef,
   onStart,
 }: {
   activePage: PageKey;
+  headerRef: RefObject<HTMLElement | null>;
   onStart: () => void;
 }) {
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0d0f12]/80 backdrop-blur-xl">
+    <header
+      ref={headerRef}
+      className="sticky top-0 z-50 border-b border-white/10 bg-[#0d0f12]/80 backdrop-blur-xl"
+    >
       <div className="mx-auto flex max-w-[1600px] items-center justify-between px-8 py-5">
         <Link
           href="/"
@@ -1099,39 +1238,40 @@ function PageLead({
   stats: PageStat[];
   actions: ReactNode;
 }) {
+  const { ref: statsRef, isVisible: areStatsVisible } = useRevealOnce<HTMLDivElement>();
+
   return (
     <section className="relative overflow-hidden border-b border-white/10">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(217,70,239,0.12),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.05),transparent_28%)]" />
-      <div className="relative mx-auto max-w-[1600px] px-8 py-24">
-        <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
+      <div className="relative mx-auto flex min-h-[var(--lead-viewport-height)] max-w-[1600px] items-center px-8 py-16 sm:py-20">
+        <div className="grid w-full gap-10 lg:grid-cols-[1.15fr_0.85fr]">
           <div className="max-w-[880px]">
             <p className="text-sm uppercase tracking-[0.35em] text-white/42">
               {eyebrow}
             </p>
-          <h1 className="mt-6 text-5xl font-semibold leading-[0.96] tracking-[-0.05em] text-white sm:text-6xl lg:text-[88px]">
-            {title}
-          </h1>
-          <p className="mt-8 max-w-[700px] text-lg leading-8 text-white/66 sm:text-xl">
-            {description}
-          </p>
-          {actions ? (
-            <div className="mt-10 flex flex-wrap gap-4">{actions}</div>
-          ) : null}
-        </div>
+            <h1 className="mt-6 text-5xl font-semibold leading-[0.96] tracking-[-0.05em] text-white sm:text-6xl lg:text-[88px]">
+              {title}
+            </h1>
+            <p className="mt-8 max-w-[700px] text-lg leading-8 text-white/66 sm:text-xl">
+              {description}
+            </p>
+            {actions ? (
+              <div className="mt-10 flex flex-wrap gap-4">{actions}</div>
+            ) : null}
+          </div>
 
-          <div className="grid gap-4">
-            {stats.map((item) => (
-              <div
-                key={item.label}
-                className="rounded-[28px] border border-white/10 bg-white/[0.04] px-6 py-5"
-              >
-                <p className="text-xs uppercase tracking-[0.28em] text-white/40">
-                  {item.label}
-                </p>
-                <p className="mt-3 text-2xl font-medium tracking-[-0.03em] text-white">
-                  {item.value}
-                </p>
-              </div>
+          <div ref={statsRef} className="grid gap-4">
+            {stats.map((item, index) => (
+              <RevealItem key={item.label} hoverLift index={index} isVisible={areStatsVisible}>
+                <div className="rounded-[28px] border border-white/10 bg-white/[0.04] px-6 py-5">
+                  <p className="text-xs uppercase tracking-[0.28em] text-white/40">
+                    {item.label}
+                  </p>
+                  <p className="mt-3 text-2xl font-medium tracking-[-0.03em] text-white">
+                    {item.value}
+                  </p>
+                </div>
+              </RevealItem>
             ))}
           </div>
         </div>
@@ -1140,18 +1280,9 @@ function PageLead({
   );
 }
 
-function QuickActionLink({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      href={href}
-      className="rounded-full border border-white/12 px-6 py-3 text-sm text-white/74 transition hover:text-white"
-    >
-      {label}
-    </Link>
-  );
-}
-
 function HomePathwaysSection() {
+  const { ref: pathwayRef, isVisible: arePathwaysVisible } =
+    useRevealOnce<HTMLDivElement>();
   const pathwayCards = [
     {
       href: "/archive",
@@ -1190,19 +1321,20 @@ function HomePathwaysSection() {
         </h2>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-4">
-        {pathwayCards.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="rounded-[28px] border border-white/10 bg-white/[0.04] p-7 transition hover:border-fuchsia-300/30 hover:bg-white/[0.06]"
-          >
-            <p className="text-xs uppercase tracking-[0.28em] text-white/40">
-              {item.eyebrow}
-            </p>
-            <h3 className="mt-5 text-2xl font-medium text-white">{item.title}</h3>
-            <p className="mt-4 text-sm leading-7 text-white/60">{item.description}</p>
-          </Link>
+      <div ref={pathwayRef} className="grid gap-6 lg:grid-cols-4">
+        {pathwayCards.map((item, index) => (
+          <RevealItem key={item.href} hoverLift index={index} isVisible={arePathwaysVisible}>
+            <Link
+              href={item.href}
+              className="block rounded-[28px] border border-white/10 bg-white/[0.04] p-7 transition hover:border-fuchsia-300/30 hover:bg-white/[0.06]"
+            >
+              <p className="text-xs uppercase tracking-[0.28em] text-white/40">
+                {item.eyebrow}
+              </p>
+              <h3 className="mt-5 text-2xl font-medium text-white">{item.title}</h3>
+              <p className="mt-4 text-sm leading-7 text-white/60">{item.description}</p>
+            </Link>
+          </RevealItem>
         ))}
       </div>
     </section>
@@ -1210,32 +1342,53 @@ function HomePathwaysSection() {
 }
 
 function ArchiveContextSection({ item }: { item: ArchiveItem }) {
+  const { ref: contextRef, isVisible: isContextVisible } =
+    useRevealOnce<HTMLDivElement>();
+
   return (
     <section className="border-t border-white/10 bg-[#12151a]">
-      <div className="mx-auto grid max-w-[1600px] items-start gap-6 px-8 py-24 lg:grid-cols-[1.08fr_0.92fr]">
-        <div className="rounded-[30px] border border-white/10 bg-white/[0.04] p-7">
-          <p className="text-xs uppercase tracking-[0.28em] text-white/40">Selected Sample</p>
-          <h3 className="mt-4 text-3xl font-medium text-white">{item.title}</h3>
-          <p className="mt-3 text-base text-white/62">
-            {item.artist} · {item.genre}
-          </p>
-          <p className="mt-6 text-sm leading-7 text-white/58">{item.summary}</p>
-          <div className="mt-8 flex flex-wrap gap-2">
-            {item.moodTags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full border border-white/10 bg-[#0d0f12] px-3 py-1 text-xs uppercase tracking-[0.24em] text-white/54"
-              >
-                {tag}
-              </span>
-            ))}
+      <div
+        ref={contextRef}
+        className="mx-auto grid max-w-[1600px] items-start gap-6 px-8 py-24 lg:grid-cols-[1.08fr_0.92fr]"
+      >
+        <RevealItem hoverLift index={0} isVisible={isContextVisible}>
+          <div className="rounded-[30px] border border-white/10 bg-white/[0.04] p-7">
+            <p className="text-xs uppercase tracking-[0.28em] text-white/40">
+              Selected Sample
+            </p>
+            <h3 className="mt-4 text-3xl font-medium text-white">{item.title}</h3>
+            <p className="mt-3 text-base text-white/62">
+              {item.artist} · {item.genre}
+            </p>
+            <p className="mt-6 text-sm leading-7 text-white/58">{item.summary}</p>
+            <div className="mt-8 flex flex-wrap gap-2">
+              {item.moodTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-white/10 bg-[#0d0f12] px-3 py-1 text-xs uppercase tracking-[0.24em] text-white/54"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
+        </RevealItem>
 
         <div className="grid max-w-[520px] gap-3 justify-self-end sm:grid-cols-3">
-          <DetailTile label="추천 시작점" value={item.recommendedInstrument} />
-          <DetailTile label="재생 길이" value={item.durationLabel} />
-          <DetailTile label="유사도" value={item.similarity.toFixed(2)} />
+          {[
+            { label: "추천 시작점", value: item.recommendedInstrument },
+            { label: "재생 길이", value: item.durationLabel },
+            { label: "유사도", value: item.similarity.toFixed(2) },
+          ].map((detail, index) => (
+            <RevealItem
+              key={detail.label}
+              hoverLift
+              index={index + 1}
+              isVisible={isContextVisible}
+            >
+              <DetailTile label={detail.label} value={detail.value} />
+            </RevealItem>
+          ))}
         </div>
       </div>
     </section>
@@ -1243,51 +1396,60 @@ function ArchiveContextSection({ item }: { item: ArchiveItem }) {
 }
 
 function AnalysisWorkflowSection({ onOpenRequest }: { onOpenRequest: () => void }) {
+  const { ref: workflowRef, isVisible: isWorkflowVisible } =
+    useRevealOnce<HTMLDivElement>();
+
   return (
     <section className="mx-auto max-w-[1600px] px-8 py-24">
-      <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="rounded-[30px] border border-white/10 bg-white/[0.04] p-7">
-          <p className="text-xs uppercase tracking-[0.28em] text-white/40">Workflow</p>
-          <h3 className="mt-4 text-3xl font-medium text-white">요청 창 이후의 역할</h3>
-          <div className="mt-8 space-y-4">
-            {requestStages.map((stage, index) => (
-              <div
-                key={stage.title}
-                className="rounded-[22px] border border-white/10 bg-[#0d0f12] px-5 py-4"
-              >
-                <p className="text-sm font-medium text-white">
-                  {index + 1}. {stage.title}
-                </p>
-                <p className="mt-2 text-sm leading-6 text-white/54">{stage.detail}</p>
-              </div>
-            ))}
+      <div ref={workflowRef} className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+        <RevealItem hoverLift index={0} isVisible={isWorkflowVisible}>
+          <div className="rounded-[30px] border border-white/10 bg-white/[0.04] p-7">
+            <p className="text-xs uppercase tracking-[0.28em] text-white/40">Workflow</p>
+            <h3 className="mt-4 text-3xl font-medium text-white">요청 창 이후의 역할</h3>
+            <div className="mt-8 space-y-4">
+              {requestStages.map((stage, index) => (
+                <div
+                  key={stage.title}
+                  className="rounded-[22px] border border-white/10 bg-[#0d0f12] px-5 py-4"
+                >
+                  <p className="text-sm font-medium text-white">
+                    {index + 1}. {stage.title}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-white/54">{stage.detail}</p>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={onOpenRequest}
+              className="mt-8 rounded-full bg-white px-6 py-3 text-sm font-medium text-[#0f1113] transition hover:bg-white/92"
+            >
+              분석 요청 창 다시 열기
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onOpenRequest}
-            className="mt-8 rounded-full bg-white px-6 py-3 text-sm font-medium text-[#0f1113] transition hover:bg-white/92"
-          >
-            분석 요청 창 다시 열기
-          </button>
-        </div>
+        </RevealItem>
 
         <div className="grid gap-6 sm:grid-cols-2">
-          {features.map((feature) => {
+          {features.map((feature, index) => {
             const Icon = feature.icon;
 
             return (
-              <div
+              <RevealItem
                 key={feature.title}
-                className="rounded-[28px] border border-white/10 bg-white/[0.04] p-7"
+                hoverLift
+                index={index + 1}
+                isVisible={isWorkflowVisible}
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fuchsia-300/10 text-fuchsia-200">
-                  <Icon className="h-5 w-5" />
+                <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-7">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fuchsia-300/10 text-fuchsia-200">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <h4 className="mt-6 text-2xl font-medium text-white">{feature.title}</h4>
+                  <p className="mt-4 text-sm leading-7 text-white/60">
+                    {feature.description}
+                  </p>
                 </div>
-                <h4 className="mt-6 text-2xl font-medium text-white">{feature.title}</h4>
-                <p className="mt-4 text-sm leading-7 text-white/60">
-                  {feature.description}
-                </p>
-              </div>
+              </RevealItem>
             );
           })}
         </div>
@@ -1301,24 +1463,27 @@ function WorkspacePageTabs({
 }: {
   activePage: Extract<PageKey, "instruments" | "score" | "effects" | "compare">;
 }) {
+  const { ref: tabsRef, isVisible: areTabsVisible } = useRevealOnce<HTMLDivElement>();
+
   return (
     <section className="mx-auto max-w-[1600px] px-8 py-10">
-      <div className="grid gap-4 lg:grid-cols-4">
-        {workspacePages.map((item) => (
-          <Link
-            key={item.key}
-            href={item.href}
-            className={`rounded-[24px] border px-5 py-5 transition ${
-              activePage === item.key
-                ? "border-fuchsia-300/30 bg-fuchsia-400/10"
-                : "border-white/10 bg-white/[0.03] hover:border-white/18"
-            }`}
-          >
-            <p className="text-xs uppercase tracking-[0.24em] text-white/40">
-              {item.label}
-            </p>
-            <p className="mt-3 text-sm leading-6 text-white/62">{item.description}</p>
-          </Link>
+      <div ref={tabsRef} className="grid gap-4 lg:grid-cols-4">
+        {workspacePages.map((item, index) => (
+          <RevealItem key={item.key} hoverLift index={index} isVisible={areTabsVisible}>
+            <Link
+              href={item.href}
+              className={`block rounded-[24px] border px-5 py-5 transition ${
+                activePage === item.key
+                  ? "border-fuchsia-300/30 bg-fuchsia-400/10"
+                  : "border-white/10 bg-white/[0.03] hover:border-white/18"
+              }`}
+            >
+              <p className="text-xs uppercase tracking-[0.24em] text-white/40">
+                {item.label}
+              </p>
+              <p className="mt-3 text-sm leading-6 text-white/62">{item.description}</p>
+            </Link>
+          </RevealItem>
         ))}
       </div>
     </section>
@@ -1336,10 +1501,14 @@ function ScoreFocusSection({
   onSelectInstrument: (instrument: InstrumentKey) => void;
   selectedScore: { title: string; scoreRows: ScoreRow[] };
 }) {
+  const { ref: scoreSectionRef, isVisible: isScoreSectionVisible } =
+    useRevealOnce<HTMLDivElement>();
+
   return (
     <section className="mx-auto max-w-[1600px] px-8 py-14">
-      <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[#12151a]">
+      <div ref={scoreSectionRef} className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+        <RevealItem hoverLift index={0} isVisible={isScoreSectionVisible}>
+          <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[#12151a]">
           <div className="border-b border-white/10 px-7 py-5">
             <p className="text-xs uppercase tracking-[0.28em] text-white/40">Notation</p>
             <h2 className="mt-3 text-3xl font-medium text-white">{selectedScore.title}</h2>
@@ -1413,29 +1582,34 @@ function ScoreFocusSection({
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        </RevealItem>
 
         <div className="space-y-4">
-          <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
-            <p className="text-sm font-medium text-white">페이지 역할</p>
-            <p className="mt-4 text-sm leading-7 text-white/60">
-              이 페이지는 연주 가능한 표기와 구간별 주석을 읽는 데 집중합니다. 악기별
-              탐색보다 notation 자체를 오래 머무르며 보는 화면입니다.
-            </p>
-          </div>
-          <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
-            <p className="text-sm font-medium text-white">현재 주목 지점</p>
-            <div className="mt-4 space-y-3">
-              {selectedArchive.highlights.map((highlight) => (
-                <div
-                  key={highlight}
-                  className="rounded-[20px] border border-white/10 bg-[#0d0f12] px-4 py-4 text-sm leading-6 text-white/68"
-                >
-                  {highlight}
-                </div>
-              ))}
+          <RevealItem hoverLift index={1} isVisible={isScoreSectionVisible}>
+            <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
+              <p className="text-sm font-medium text-white">페이지 역할</p>
+              <p className="mt-4 text-sm leading-7 text-white/60">
+                이 페이지는 연주 가능한 표기와 구간별 주석을 읽는 데 집중합니다. 악기별
+                탐색보다 notation 자체를 오래 머무르며 보는 화면입니다.
+              </p>
             </div>
-          </div>
+          </RevealItem>
+          <RevealItem hoverLift index={2} isVisible={isScoreSectionVisible}>
+            <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
+              <p className="text-sm font-medium text-white">현재 주목 지점</p>
+              <div className="mt-4 space-y-3">
+                {selectedArchive.highlights.map((highlight) => (
+                  <div
+                    key={highlight}
+                    className="rounded-[20px] border border-white/10 bg-[#0d0f12] px-4 py-4 text-sm leading-6 text-white/68"
+                  >
+                    {highlight}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </RevealItem>
         </div>
       </div>
     </section>
@@ -1451,45 +1625,53 @@ function EffectsLabSection({
   selectedInstrument: InstrumentKey;
   onSelectInstrument: (instrument: InstrumentKey) => void;
 }) {
+  const { ref: effectsSectionRef, isVisible: isEffectsSectionVisible } =
+    useRevealOnce<HTMLDivElement>();
+
   return (
     <section className="mx-auto max-w-[1600px] px-8 py-14">
-      <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr]">
+      <div ref={effectsSectionRef} className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr]">
         <div className="space-y-4">
-          <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
-            <p className="text-sm font-medium text-white">활성 파트</p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {(Object.keys(instrumentContents) as InstrumentKey[]).map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => onSelectInstrument(item)}
-                  className={`rounded-full px-4 py-2 text-sm transition ${
-                    selectedInstrument === item
-                      ? "border border-fuchsia-300/30 bg-fuchsia-400/12 text-fuchsia-100"
-                      : "border border-white/10 bg-[#0d0f12] text-white/62 hover:text-white"
-                  }`}
-                >
-                  {item}
-                </button>
-              ))}
+          <RevealItem hoverLift index={0} isVisible={isEffectsSectionVisible}>
+            <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
+              <p className="text-sm font-medium text-white">활성 파트</p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {(Object.keys(instrumentContents) as InstrumentKey[]).map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => onSelectInstrument(item)}
+                    className={`rounded-full px-4 py-2 text-sm transition ${
+                      selectedInstrument === item
+                        ? "border border-fuchsia-300/30 bg-fuchsia-400/12 text-fuchsia-100"
+                        : "border border-white/10 bg-[#0d0f12] text-white/62 hover:text-white"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
-            <p className="text-sm font-medium text-white">질감 키워드</p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {selectedArchive.moodTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-white/10 bg-[#0d0f12] px-3 py-1 text-xs uppercase tracking-[0.24em] text-white/56"
-                >
-                  {tag}
-                </span>
-              ))}
+          </RevealItem>
+          <RevealItem hoverLift index={1} isVisible={isEffectsSectionVisible}>
+            <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
+              <p className="text-sm font-medium text-white">질감 키워드</p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {selectedArchive.moodTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-white/10 bg-[#0d0f12] px-3 py-1 text-xs uppercase tracking-[0.24em] text-white/56"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          </RevealItem>
         </div>
 
-        <div className="rounded-[30px] border border-white/10 bg-[#12151a] p-7">
+        <RevealItem hoverLift index={2} isVisible={isEffectsSectionVisible}>
+          <div className="rounded-[30px] border border-white/10 bg-[#12151a] p-7">
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.28em] text-white/40">Profile</p>
@@ -1540,7 +1722,8 @@ function EffectsLabSection({
               청감적 해석을 우선하고, 비교분석 전에 사운드 성향을 정리합니다.
             </p>
           </div>
-        </div>
+          </div>
+        </RevealItem>
       </div>
     </section>
   );
@@ -1559,12 +1742,15 @@ function Hero({
   onSampleClick: () => void;
   onUploadClick: () => void;
 }) {
+  const { ref: heroCardsRef, isVisible: areHeroCardsVisible } =
+    useRevealOnce<HTMLDivElement>();
+
   return (
     <section id="top" className="relative overflow-hidden border-b border-white/10">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(217,70,239,0.14),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.06),transparent_28%)]" />
       <div className="absolute inset-x-0 bottom-0 h-[340px] bg-[linear-gradient(to_top,rgba(255,255,255,0.02),transparent)]" />
 
-      <div className="relative mx-auto grid min-h-[88vh] max-w-[1600px] items-end gap-12 px-8 pb-20 pt-24 lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="relative mx-auto grid min-h-[var(--lead-viewport-height)] max-w-[1600px] items-end gap-12 px-8 pb-16 pt-16 sm:pb-20 sm:pt-20 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="max-w-[800px]">
           <p className="mb-6 text-sm uppercase tracking-[0.35em] text-white/42">
             Sound · Score · Structure
@@ -1599,76 +1785,80 @@ function Hero({
           </div>
         </div>
 
-        <div className="grid gap-5">
-          <div className="rounded-[30px] border border-white/10 bg-white/5 p-7 backdrop-blur-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.28em] text-white/42">
-                  Current analysis
-                </p>
-                <h3 className="mt-3 text-2xl font-medium text-white">
-                  {item.title} · {selectedInstrument} 파트
-                </h3>
+        <div ref={heroCardsRef} className="grid gap-5">
+          <RevealItem hoverLift index={0} isVisible={areHeroCardsVisible}>
+            <div className="rounded-[30px] border border-white/10 bg-white/5 p-7 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.28em] text-white/42">
+                    Current analysis
+                  </p>
+                  <h3 className="mt-3 text-2xl font-medium text-white">
+                    {item.title} · {selectedInstrument} 파트
+                  </h3>
+                </div>
+                <div className="rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-4 py-1.5 text-sm text-fuchsia-100">
+                  {workspacePrepared ? "작업 창 준비됨" : "샘플 워크스페이스"}
+                </div>
               </div>
-              <div className="rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-4 py-1.5 text-sm text-fuchsia-100">
-                {workspacePrepared ? "작업 창 준비됨" : "샘플 워크스페이스"}
-              </div>
-            </div>
 
-            <div className="mt-8 space-y-4">
-              <div className="flex items-end gap-4">
-                <span className="text-sm text-white/42">BPM</span>
-                <span className="text-3xl font-semibold tracking-[-0.04em] text-white">
-                  {item.bpm}
-                </span>
+              <div className="mt-8 space-y-4">
+                <div className="flex items-end gap-4">
+                  <span className="text-sm text-white/42">BPM</span>
+                  <span className="text-3xl font-semibold tracking-[-0.04em] text-white">
+                    {item.bpm}
+                  </span>
+                </div>
+                <div className="flex items-end gap-4">
+                  <span className="text-sm text-white/42">KEY</span>
+                  <span className="text-3xl font-semibold tracking-[-0.04em] text-white">
+                    {item.key}
+                  </span>
+                </div>
+                <div className="flex items-end gap-4">
+                  <span className="text-sm text-white/42">유사도</span>
+                  <span className="text-3xl font-semibold tracking-[-0.04em] text-fuchsia-200">
+                    {item.similarity.toFixed(2)}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-end gap-4">
-                <span className="text-sm text-white/42">KEY</span>
-                <span className="text-3xl font-semibold tracking-[-0.04em] text-white">
-                  {item.key}
-                </span>
-              </div>
-              <div className="flex items-end gap-4">
-                <span className="text-sm text-white/42">유사도</span>
-                <span className="text-3xl font-semibold tracking-[-0.04em] text-fuchsia-200">
-                  {item.similarity.toFixed(2)}
-                </span>
-              </div>
+              <p className="mt-6 text-sm leading-7 text-white/58">{item.summary}</p>
             </div>
-            <p className="mt-6 text-sm leading-7 text-white/58">{item.summary}</p>
-          </div>
+          </RevealItem>
 
-          <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[#12151a] p-7">
-            <div className="flex items-center gap-3 text-sm text-white/48">
-              <AudioWaveform className="h-4 w-4" />
-              파형과 구조
-            </div>
-            <div className="mt-6 space-y-4">
-              <div className="relative h-20 overflow-hidden rounded-2xl bg-white/[0.04] px-4 py-3">
-                <div className="absolute inset-y-0 left-[6%] w-[1px] bg-fuchsia-300/40" />
-                <div className="absolute inset-y-0 left-[52%] w-[1px] bg-fuchsia-300/30" />
-                <div className="flex h-full items-end gap-1">
-                  {Array.from({ length: 48 }).map((_, index) => (
-                    <span
-                      key={index}
-                      className="w-full rounded-full bg-gradient-to-t from-fuchsia-300/20 via-fuchsia-200/45 to-white/70"
-                      style={{ height: `${28 + ((index * 17) % 46)}%` }}
-                    />
+          <RevealItem hoverLift index={1} isVisible={areHeroCardsVisible}>
+            <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[#12151a] p-7">
+              <div className="flex items-center gap-3 text-sm text-white/48">
+                <AudioWaveform className="h-4 w-4" />
+                파형과 구조
+              </div>
+              <div className="mt-6 space-y-4">
+                <div className="relative h-20 overflow-hidden rounded-2xl bg-white/[0.04] px-4 py-3">
+                  <div className="absolute inset-y-0 left-[6%] w-[1px] bg-fuchsia-300/40" />
+                  <div className="absolute inset-y-0 left-[52%] w-[1px] bg-fuchsia-300/30" />
+                  <div className="flex h-full items-end gap-1">
+                    {Array.from({ length: 48 }).map((_, index) => (
+                      <span
+                        key={index}
+                        className="w-full rounded-full bg-gradient-to-t from-fuchsia-300/20 via-fuchsia-200/45 to-white/70"
+                        style={{ height: `${28 + ((index * 17) % 46)}%` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-5 gap-2 text-[11px] uppercase tracking-[0.24em] text-white/42">
+                  {timeline.map((segment) => (
+                    <div
+                      key={segment.label}
+                      className="rounded-full border border-white/10 px-3 py-2 text-center"
+                    >
+                      {segment.label}
+                    </div>
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-5 gap-2 text-[11px] uppercase tracking-[0.24em] text-white/42">
-                {timeline.map((segment) => (
-                  <div
-                    key={segment.label}
-                    className="rounded-full border border-white/10 px-3 py-2 text-center"
-                  >
-                    {segment.label}
-                  </div>
-                ))}
-              </div>
             </div>
-          </div>
+          </RevealItem>
         </div>
       </div>
     </section>
@@ -1688,6 +1878,9 @@ function ArchiveSection({
   onInspectArchive: (archiveId: string) => void;
   onPreviewArchive: (archiveId: string) => void;
 }) {
+  const { ref: archiveGridRef, isVisible: areArchiveCardsVisible } =
+    useRevealOnce<HTMLDivElement>();
+
   return (
     <section id="archive" className="mx-auto max-w-[1600px] px-8 py-24">
       <div className="mb-12 flex items-end justify-between gap-6">
@@ -1705,13 +1898,14 @@ function ArchiveSection({
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {archiveItems.map((item) => {
+      <div ref={archiveGridRef} className="grid gap-6 lg:grid-cols-3">
+        {archiveItems.map((item, index) => {
           const isSelected = item.id === selectedArchiveId;
           const isHovered = item.id === hoveredArchiveId;
 
           return (
-            <article key={item.id}>
+            <RevealItem key={item.id} hoverLift index={index} isVisible={areArchiveCardsVisible}>
+              <article>
               <button
                 type="button"
                 aria-label={`${item.title} 샘플 보기`}
@@ -1761,7 +1955,8 @@ function ArchiveSection({
                   </div>
                 </div>
               </button>
-            </article>
+              </article>
+            </RevealItem>
           );
         })}
       </div>
@@ -1770,6 +1965,9 @@ function ArchiveSection({
 }
 
 function FeatureSection() {
+  const { ref: featureGridRef, isVisible: areFeatureCardsVisible } =
+    useRevealOnce<HTMLDivElement>();
+
   return (
     <section id="features" className="border-y border-white/10 bg-[#12151a]">
       <div className="mx-auto max-w-[1600px] px-8 py-24">
@@ -1782,23 +1980,27 @@ function FeatureSection() {
           </h2>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-4">
-          {features.map((item) => {
+        <div ref={featureGridRef} className="grid gap-6 lg:grid-cols-4">
+          {features.map((item, index) => {
             const Icon = item.icon;
 
             return (
-              <article
+              <RevealItem
                 key={item.title}
-                className="rounded-[26px] border border-white/10 bg-white/5 p-7"
+                hoverLift
+                index={index}
+                isVisible={areFeatureCardsVisible}
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fuchsia-300/10 text-fuchsia-200">
-                  <Icon className="h-5 w-5" />
-                </div>
-                <h3 className="mt-6 text-2xl font-medium text-white">{item.title}</h3>
-                <p className="mt-4 text-sm leading-7 text-white/62">
-                  {item.description}
-                </p>
-              </article>
+                <article className="rounded-[26px] border border-white/10 bg-white/5 p-7">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fuchsia-300/10 text-fuchsia-200">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="mt-6 text-2xl font-medium text-white">{item.title}</h3>
+                  <p className="mt-4 text-sm leading-7 text-white/62">
+                    {item.description}
+                  </p>
+                </article>
+              </RevealItem>
             );
           })}
         </div>
@@ -1818,9 +2020,12 @@ function AnalysisShowcase({
   onSelectInstrument: (instrument: InstrumentKey) => void;
   selectedScore: { title: string; scoreRows: ScoreRow[] };
 }) {
+  const { ref: analysisShowcaseRef, isVisible: isAnalysisShowcaseVisible } =
+    useRevealOnce<HTMLDivElement>();
+
   return (
     <section id="analysis" className="mx-auto max-w-[1600px] px-8 py-24">
-      <div className="grid gap-8 lg:grid-cols-[0.7fr_1.3fr]">
+      <div ref={analysisShowcaseRef} className="grid gap-8 lg:grid-cols-[0.7fr_1.3fr]">
         <div className="space-y-8">
           <div>
             <p className="text-sm uppercase tracking-[0.32em] text-white/42">
@@ -1836,141 +2041,147 @@ function AnalysisShowcase({
             </p>
           </div>
 
-          <div className="rounded-[28px] border border-white/10 bg-white/5 p-7">
-            <div className="flex items-center gap-3 text-sm text-white/46">
-              <Sparkles className="h-4 w-4 text-fuchsia-200" />
-              현재 선택된 파트
+          <RevealItem hoverLift index={0} isVisible={isAnalysisShowcaseVisible}>
+            <div className="rounded-[28px] border border-white/10 bg-white/5 p-7">
+              <div className="flex items-center gap-3 text-sm text-white/46">
+                <Sparkles className="h-4 w-4 text-fuchsia-200" />
+                현재 선택된 파트
+              </div>
+              <div className="mt-6 flex flex-wrap gap-3">
+                {(Object.keys(instrumentContents) as InstrumentKey[]).map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    aria-pressed={selectedInstrument === item}
+                    onClick={() => onSelectInstrument(item)}
+                    className={`rounded-full px-4 py-2 text-sm transition ${
+                      selectedInstrument === item
+                        ? "border border-fuchsia-300/30 bg-fuchsia-400/12 text-fuchsia-100"
+                        : "border border-white/12 bg-transparent text-white/64 hover:text-white"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="mt-6 flex flex-wrap gap-3">
-              {(Object.keys(instrumentContents) as InstrumentKey[]).map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  aria-pressed={selectedInstrument === item}
-                  onClick={() => onSelectInstrument(item)}
-                  className={`rounded-full px-4 py-2 text-sm transition ${
-                    selectedInstrument === item
-                      ? "border border-fuchsia-300/30 bg-fuchsia-400/12 text-fuchsia-100"
-                      : "border border-white/12 bg-transparent text-white/64 hover:text-white"
-                  }`}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          </div>
+          </RevealItem>
 
-          <div className="rounded-[28px] border border-white/10 bg-white/5 p-7">
-            <div className="flex items-center gap-3 text-sm text-white/46">
-              <Waves className="h-4 w-4 text-fuchsia-200" />
-              {selectedInstrument === "기타"
-                ? "기타 이펙터 프로파일"
-                : `${selectedInstrument} 파트 프로파일`}
-            </div>
-            <div className="mt-6 space-y-5">
-              {selectedArchive.effectMetrics.map((item) => (
-                <div key={item.label}>
-                  <div className="flex items-center justify-between text-sm text-white/72">
-                    <span>{item.label}</span>
-                    <span className="text-fuchsia-100">{item.value.toFixed(2)}</span>
+          <RevealItem hoverLift index={1} isVisible={isAnalysisShowcaseVisible}>
+            <div className="rounded-[28px] border border-white/10 bg-white/5 p-7">
+              <div className="flex items-center gap-3 text-sm text-white/46">
+                <Waves className="h-4 w-4 text-fuchsia-200" />
+                {selectedInstrument === "기타"
+                  ? "기타 이펙터 프로파일"
+                  : `${selectedInstrument} 파트 프로파일`}
+              </div>
+              <div className="mt-6 space-y-5">
+                {selectedArchive.effectMetrics.map((item) => (
+                  <div key={item.label}>
+                    <div className="flex items-center justify-between text-sm text-white/72">
+                      <span>{item.label}</span>
+                      <span className="text-fuchsia-100">{item.value.toFixed(2)}</span>
+                    </div>
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/8">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-fuchsia-300 via-fuchsia-200 to-white"
+                        style={{ width: `${item.value * 100}%` }}
+                      />
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-white/48">{item.detail}</p>
                   </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/8">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-fuchsia-300 via-fuchsia-200 to-white"
-                      style={{ width: `${item.value * 100}%` }}
-                    />
-                  </div>
-                  <p className="mt-2 text-xs leading-5 text-white/48">{item.detail}</p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          </RevealItem>
         </div>
 
         <div className="space-y-8">
-          <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[#12151a]">
-            <div className="border-b border-white/10 px-7 py-5">
-              <div className="flex items-center justify-between gap-6">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.28em] text-white/42">
-                    Score View
-                  </p>
-                  <h3 className="mt-2 text-2xl font-medium text-white">
-                    {selectedScore.title}
-                  </h3>
-                </div>
-                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-white/62">
-                  <Piano className="h-4 w-4" />
-                  MusicXML Ready
+          <RevealItem hoverLift index={2} isVisible={isAnalysisShowcaseVisible}>
+            <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[#12151a]">
+              <div className="border-b border-white/10 px-7 py-5">
+                <div className="flex items-center justify-between gap-6">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.28em] text-white/42">
+                      Score View
+                    </p>
+                    <h3 className="mt-2 text-2xl font-medium text-white">
+                      {selectedScore.title}
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-white/62">
+                    <Piano className="h-4 w-4" />
+                    MusicXML Ready
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]">
-              <div className="border-b border-white/10 p-7 lg:border-b-0 lg:border-r">
-                <div className="rounded-[22px] border border-white/10 bg-[#0d0f12] p-6">
-                  <div className="flex items-center justify-between text-xs uppercase tracking-[0.24em] text-white/42">
-                    <span>표기 미리보기</span>
-                    <span>{selectedInstrument}</span>
-                  </div>
-                  <div className="mt-6 space-y-4 text-white/80">
-                    {selectedScore.scoreRows.map((row) => (
-                      <div
-                        key={row.bar}
-                        className="grid grid-cols-[48px_72px_1fr] items-start gap-4 border-b border-white/6 pb-4 last:border-b-0"
-                      >
-                        <span className="text-sm text-white/36">{row.bar}</span>
-                        <span className="font-medium text-fuchsia-100">
-                          {row.chord}
-                        </span>
-                        <div>
-                          <p className="text-sm leading-6 text-white/78">{row.note}</p>
-                          <p className="mt-1 text-xs leading-5 text-white/42">{row.cue}</p>
+              <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]">
+                <div className="border-b border-white/10 p-7 lg:border-b-0 lg:border-r">
+                  <div className="rounded-[22px] border border-white/10 bg-[#0d0f12] p-6">
+                    <div className="flex items-center justify-between text-xs uppercase tracking-[0.24em] text-white/42">
+                      <span>표기 미리보기</span>
+                      <span>{selectedInstrument}</span>
+                    </div>
+                    <div className="mt-6 space-y-4 text-white/80">
+                      {selectedScore.scoreRows.map((row) => (
+                        <div
+                          key={row.bar}
+                          className="grid grid-cols-[48px_72px_1fr] items-start gap-4 border-b border-white/6 pb-4 last:border-b-0"
+                        >
+                          <span className="text-sm text-white/36">{row.bar}</span>
+                          <span className="font-medium text-fuchsia-100">
+                            {row.chord}
+                          </span>
+                          <div>
+                            <p className="text-sm leading-6 text-white/78">{row.note}</p>
+                            <p className="mt-1 text-xs leading-5 text-white/42">{row.cue}</p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-7">
-                <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
-                  <div className="mb-6 flex items-center justify-between text-xs uppercase tracking-[0.24em] text-white/42">
-                    <span>구간 타임라인</span>
-                    <span>00:00 — {selectedArchive.durationLabel}</span>
-                  </div>
-                  <div className="flex h-12 overflow-hidden rounded-full bg-white/6">
-                    {timeline.map((item) => (
-                      <div
-                        key={item.label}
-                        className={`flex items-center justify-center text-[11px] uppercase tracking-[0.24em] text-[#0d0f12] ${item.accent}`}
-                        style={{ width: item.width }}
-                      >
-                        {item.label}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="relative mt-8 h-28 overflow-hidden rounded-[22px] bg-[#0d0f12] px-4 py-4">
-                    <div className="flex h-full items-center gap-1.5">
-                      {Array.from({ length: 60 }).map((_, index) => (
-                        <span
-                          key={index}
-                          className="w-full rounded-full bg-gradient-to-t from-fuchsia-300/15 via-fuchsia-200/35 to-white/60"
-                          style={{ height: `${18 + ((index * 13) % 62)}%` }}
-                        />
                       ))}
                     </div>
-                    <div className="absolute inset-y-4 left-[42%] w-[2px] rounded-full bg-fuchsia-300/60" />
                   </div>
-                  <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                    <InfoPill label="코드" value="Am9 → Fmaj7 → C → G" />
-                    <InfoPill label="강약" value="중간에서 후렴 직전 상승" />
-                    <InfoPill label="주석" value={`${selectedInstrument} 중심 해석`} />
+                </div>
+
+                <div className="p-7">
+                  <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
+                    <div className="mb-6 flex items-center justify-between text-xs uppercase tracking-[0.24em] text-white/42">
+                      <span>구간 타임라인</span>
+                      <span>00:00 — {selectedArchive.durationLabel}</span>
+                    </div>
+                    <div className="flex h-12 overflow-hidden rounded-full bg-white/6">
+                      {timeline.map((item) => (
+                        <div
+                          key={item.label}
+                          className={`flex items-center justify-center text-[11px] uppercase tracking-[0.24em] text-[#0d0f12] ${item.accent}`}
+                          style={{ width: item.width }}
+                        >
+                          {item.label}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="relative mt-8 h-28 overflow-hidden rounded-[22px] bg-[#0d0f12] px-4 py-4">
+                      <div className="flex h-full items-center gap-1.5">
+                        {Array.from({ length: 60 }).map((_, index) => (
+                          <span
+                            key={index}
+                            className="w-full rounded-full bg-gradient-to-t from-fuchsia-300/15 via-fuchsia-200/35 to-white/60"
+                            style={{ height: `${18 + ((index * 13) % 62)}%` }}
+                          />
+                        ))}
+                      </div>
+                      <div className="absolute inset-y-4 left-[42%] w-[2px] rounded-full bg-fuchsia-300/60" />
+                    </div>
+                    <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                      <InfoPill label="코드" value="Am9 → Fmaj7 → C → G" />
+                      <InfoPill label="강약" value="중간에서 후렴 직전 상승" />
+                      <InfoPill label="주석" value={`${selectedInstrument} 중심 해석`} />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </RevealItem>
         </div>
       </div>
     </section>
@@ -1995,6 +2206,9 @@ function CompareSection({
   similarity: number;
   onToggleCard: (track: CompareTrack) => void;
 }) {
+  const { ref: compareGridRef, isVisible: areCompareCardsVisible } =
+    useRevealOnce<HTMLDivElement>();
+
   return (
     <section id="compare" className="border-t border-white/10 bg-[#12151a] py-24">
       <div className="mx-auto max-w-[1600px] px-8">
@@ -2011,32 +2225,38 @@ function CompareSection({
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_1fr_0.7fr]">
-          <CompareCard
-            title="원음원"
-            subtitle="Original"
-            isPlaying={comparePreview.open && comparePreview.activeTrack === "original" && comparePreview.isPlaying}
-            onToggle={() => onToggleCard("original")}
-          />
-          <CompareCard
-            title="재합성 음원"
-            subtitle="Resynthesized"
-            isPlaying={comparePreview.open && comparePreview.activeTrack === "resynth" && comparePreview.isPlaying}
-            onToggle={() => onToggleCard("resynth")}
-          />
-          <div className="rounded-[30px] border border-white/10 bg-white/5 p-7">
-            <p className="text-xs uppercase tracking-[0.28em] text-white/42">Evaluation</p>
-            <div className="mt-6 space-y-5">
-              <MetricLine label="전체 유사도" value={similarity} />
-              <MetricLine label="코드 정확도" value={0.74} />
-              <MetricLine label="멜로디 일치도" value={0.69} />
-              <MetricLine label="분리 품질" value={0.77} />
+        <div ref={compareGridRef} className="grid gap-6 lg:grid-cols-[1fr_1fr_0.7fr]">
+          <RevealItem hoverLift index={0} isVisible={areCompareCardsVisible}>
+            <CompareCard
+              title="원음원"
+              subtitle="Original"
+              isPlaying={comparePreview.open && comparePreview.activeTrack === "original" && comparePreview.isPlaying}
+              onToggle={() => onToggleCard("original")}
+            />
+          </RevealItem>
+          <RevealItem hoverLift index={1} isVisible={areCompareCardsVisible}>
+            <CompareCard
+              title="재합성 음원"
+              subtitle="Resynthesized"
+              isPlaying={comparePreview.open && comparePreview.activeTrack === "resynth" && comparePreview.isPlaying}
+              onToggle={() => onToggleCard("resynth")}
+            />
+          </RevealItem>
+          <RevealItem hoverLift index={2} isVisible={areCompareCardsVisible}>
+            <div className="rounded-[30px] border border-white/10 bg-white/5 p-7">
+              <p className="text-xs uppercase tracking-[0.28em] text-white/42">Evaluation</p>
+              <div className="mt-6 space-y-5">
+                <MetricLine label="전체 유사도" value={similarity} />
+                <MetricLine label="코드 정확도" value={0.74} />
+                <MetricLine label="멜로디 일치도" value={0.69} />
+                <MetricLine label="분리 품질" value={0.77} />
+              </div>
+              <div className="mt-8 rounded-[22px] border border-fuchsia-300/15 bg-fuchsia-400/8 px-5 py-4 text-sm leading-6 text-fuchsia-100/88">
+                후렴 구간에서의 공간계 표현과 보컬 레이어는 원곡과 매우 유사하게
+                재현되었지만, 저역 베이스의 어택은 다소 부드럽게 추정되었습니다.
+              </div>
             </div>
-            <div className="mt-8 rounded-[22px] border border-fuchsia-300/15 bg-fuchsia-400/8 px-5 py-4 text-sm leading-6 text-fuchsia-100/88">
-              후렴 구간에서의 공간계 표현과 보컬 레이어는 원곡과 매우 유사하게
-              재현되었지만, 저역 베이스의 어택은 다소 부드럽게 추정되었습니다.
-            </div>
-          </div>
+          </RevealItem>
         </div>
       </div>
     </section>
