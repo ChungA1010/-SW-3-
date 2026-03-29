@@ -2,6 +2,53 @@ import csv
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Effect type to group mapping
+effect_to_group = {
+    'clean': 'clean',
+    'drive': 'drive',
+    'dist': 'drive',
+    'delay': 'space',
+    'reverb': 'space',
+    'chorus': 'phase',
+    'phaser': 'phase',
+    # Add more as needed
+}
+
+# Group to color mapping (RGB tuples for blending)
+group_to_color = {
+    'clean': (0.5, 0.5, 0.5),  # gray
+    'drive': (1.0, 0.0, 0.0),  # red
+    'space': (0.0, 0.0, 1.0),  # blue
+    'phase': (1.0, 1.0, 0.0)   # yellow
+}
+
+# Group to marker mapping
+group_to_marker = {
+    'clean': 'o',
+    'drive': 's',
+    'space': '^',
+    'phase': 'D'
+}
+
+def get_color_for_effect_type(effect_type):
+    sub_effects = effect_type.split('+')
+    groups = [effect_to_group.get(sub, 'clean') for sub in sub_effects]
+    colors = [group_to_color[group] for group in groups]
+    if len(colors) == 1:
+        return colors[0]
+    else:
+        # Average RGB values
+        avg_r = sum(c[0] for c in colors) / len(colors)
+        avg_g = sum(c[1] for c in colors) / len(colors)
+        avg_b = sum(c[2] for c in colors) / len(colors)
+        return (avg_r, avg_g, avg_b)
+
+def get_marker_for_effect_type(effect_type):
+    sub_effects = effect_type.split('+')
+    groups = [effect_to_group.get(sub, 'clean') for sub in sub_effects]
+    # Use the first group's marker
+    return group_to_marker.get(groups[0], 'o')
+
 def parse_filename(filename):
     """
     Parse filename to extract effect_type, play_type, number.
@@ -57,38 +104,12 @@ def visualize_features(csv_file):
     play_groups = sorted(set(row['play_group'] for row in df))
     x_map = {pg: i for i, pg in enumerate(play_groups)}
     
-    # Effect type to group mapping
-    effect_to_group = {
-        'clean': 'clean',
-        'drive': 'drive',
-        'dist': 'drive',
-        'delay': 'space',
-        # Add more as needed: 'phaser': 'phase', 'chorus': 'phase', etc.
-    }
-    
-    # Group to color mapping
-    group_to_color = {
-        'clean': 'gray',
-        'drive': 'red',
-        'space': 'blue',
-        'phase': 'yellow'
-    }
-    
-    # Group to marker mapping
-    group_to_marker = {
-        'clean': 'o',
-        'drive': 's',
-        'space': '^',
-        'phase': 'D'
-    }
-    
     # Color and marker map for effect types
     color_map = {}
     marker_map = {}
     for effect_type in effect_types:
-        group = effect_to_group.get(effect_type, 'clean')
-        color_map[effect_type] = group_to_color.get(group, 'gray')
-        marker_map[effect_type] = group_to_marker.get(group, 'o')
+        color_map[effect_type] = get_color_for_effect_type(effect_type)
+        marker_map[effect_type] = get_marker_for_effect_type(effect_type)
     
     # Create subplots: 4x3 for 12 features
     fig, axes = plt.subplots(4, 3, figsize=(18, 15))
