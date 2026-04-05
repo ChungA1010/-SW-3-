@@ -1,3 +1,5 @@
 venv/
 .vscode/
 __pycache__/
+test_effector/
+test_separation/

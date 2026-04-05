@@ -1,12 +1,13 @@
+import os
 from pedalboard.io import AudioFile
 from pedalboard import Pedalboard, Reverb, Delay, Chorus, Distortion
 
 # Create a pedalboard
 board = Pedalboard([
-    Distortion(drive_db=20.0),
-    # Reverb(room_size=0.5),
-    # Delay(delay_seconds=0.1, feedback=0.3, mix=0.1),
-    # Chorus(rate_hz=1.5, depth=0.7)
+    # Distortion(drive_db=25.0),
+    Delay(delay_seconds=0.1, feedback=0.3, mix=0.1),
+    Reverb(room_size=0.5),
+    # Chorus(rate_hz=1.5, depth=0.3)
 ])
 
 # set audio file name by effect type
@@ -30,8 +31,12 @@ effect_type = "+".join(effects)
 print(f"Effect type: {effect_type}")
 
 # Load an audio file, set output file name
-input_file = "test_effector/test_clean_solo_3.wav"
-output_file = input_file.replace("clean", effect_type)
+input_file = "test_effector/handmade/test_clean_solo_2.wav"
+output_filename = os.path.basename(input_file).replace("clean", effect_type)
+output_file = os.path.join("test_effector", "pedalboard", output_filename)
+
+# Ensure the output directory exists
+os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
 # Process the audio through the pedalboard
 with AudioFile(input_file) as f:

@@ -111,8 +111,8 @@ def visualize_features(csv_file):
         color_map[effect_type] = get_color_for_effect_type(effect_type)
         marker_map[effect_type] = get_marker_for_effect_type(effect_type)
     
-    # Create subplots: 4x3 for 12 features
-    fig, axes = plt.subplots(4, 3, figsize=(18, 15))
+    # Create subplots: 5x4 for 20 features
+    fig, axes = plt.subplots(5, 4, figsize=(20, 20))
     axes = axes.flatten()
     
     for i, feature in enumerate(feature_columns):
