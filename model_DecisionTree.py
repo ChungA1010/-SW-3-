@@ -8,64 +8,50 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 
 
-def parse_filename(filename):
+# ==============================
+# filename → effect tokens
+# ==============================
+def parse_filename(filename):  # 파일명에서 이펙터 토큰 리스트 추출
     filename = filename.strip()
     if filename.lower().endswith('.wav'):
         filename = filename[:-4]
 
     if filename.startswith('EGFxSet_'):
-        name = filename[len('EGFxSet_'):]
-        parts = name.split('_')
-        effect_type = parts[0] if parts else ''
-        if len(parts) == 1:
-            return effect_type
-        if len(parts) == 2:
-            return effect_type
-        return effect_type
+        filename = filename[len('EGFxSet_'):]
 
     for prefix in ['handmade_test_', 'pedalboard_test_', 'test_', 'handmade_', 'pedalboard_']:
         if filename.startswith(prefix):
             filename = filename[len(prefix):]
             break
 
-    parts = filename.split('_')
-    return parts[0] if parts else ''
+    # +, -, _ 모두 분리
+    tokens = filename.replace('+', '_').replace('-', '_').split('_')
+    return tokens
 
 
-def map_to_group(effect_type):
-    effect_type = effect_type.strip()
-    if not effect_type:
-        return None
+# ==============================
+# tokens → multi-label
+# ==============================
+def map_to_groups(tokens):  # 여러 이펙터를 Drive/Space/Phase multi-label로 변환
+    groups = {'Drive': 0, 'Space': 0, 'Phase': 0}
 
-    lower = effect_type.lower()
-    if any(token in lower for token in ['drive', 'dist', 'overdrive', 'fuzz', 'crunch', 'boost', 'bluesdriver', 'rat', 'tubescreamer']):
-        return 'Drive'
-    if any(token in lower for token in ['delay', 'reverb', 'echo', 'hall', 'space']):
-        return 'Space'
-    if any(token in lower for token in ['chorus', 'phaser', 'phase', 'flanger', 'vibrato']):
-        return 'Phase'
-
-    tokens = effect_type.replace('+', ' ').replace('-', ' ').split()
-    groups = set()
     for token in tokens:
-        token_lower = token.lower()
-        if token_lower in ['drive', 'dist', 'overdrive', 'fuzz', 'crunch', 'boost', 'bluesdriver', 'rat', 'tubescreamer']:
-            groups.add('Drive')
-        elif token_lower in ['delay', 'reverb', 'echo', 'hall', 'space']:
-            groups.add('Space')
-        elif token_lower in ['chorus', 'phaser', 'phase', 'flanger', 'vibrato']:
-            groups.add('Phase')
+        t = token.lower()
 
-    if 'Drive' in groups:
-        return 'Drive'
-    if 'Space' in groups:
-        return 'Space'
-    if 'Phase' in groups:
-        return 'Phase'
-    return None
+        if any(x in t for x in ['drive', 'dist', 'overdrive', 'fuzz', 'crunch', 'boost', 'bluesdriver', 'rat', 'tubescreamer']):
+            groups['Drive'] = 1
+        if any(x in t for x in ['delay', 'reverb', 'echo', 'hall', 'space']):
+            groups['Space'] = 1
+        if any(x in t for x in ['chorus', 'phaser', 'phase', 'flanger', 'vibrato']):
+            groups['Phase'] = 1
+
+    return groups
 
 
-def load_csv_features(csv_path):
+# ==============================
+# CSV load
+# ==============================
+def load_csv_features(csv_path):  # CSV → feature + multi-label
     if not os.path.isfile(csv_path):
         raise FileNotFoundError(f'CSV file not found: {csv_path}')
 
@@ -78,10 +64,8 @@ def load_csv_features(csv_path):
             if 'filename' not in row:
                 raise ValueError('CSV must contain a filename column')
 
-            label_raw = parse_filename(row['filename'])
-            label = map_to_group(label_raw)
-            if label is None:
-                continue
+            tokens = parse_filename(row['filename'])
+            label_dict = map_to_groups(tokens)
 
             row_features = []
             for key, value in row.items():
@@ -96,7 +80,7 @@ def load_csv_features(csv_path):
                 continue
 
             features.append(row_features)
-            labels.append(label)
+            labels.append(label_dict)
 
     if not features:
         raise ValueError(f'No valid rows found in {csv_path}')
@@ -104,64 +88,96 @@ def load_csv_features(csv_path):
     return features, labels
 
 
+# ==============================
+# dataset split
+# ==============================
 def prepare_datasets(egfx_path, handmade_path, pedalboard_path, test_size=0.3, random_state=42):
     egfx_features, egfx_labels = load_csv_features(egfx_path)
     handmade_features, handmade_labels = load_csv_features(handmade_path)
     pedalboard_features, pedalboard_labels = load_csv_features(pedalboard_path)
 
+    # EGFxSet split
     X_train, X_egfx_test, y_train, y_egfx_test = train_test_split(
         egfx_features,
         egfx_labels,
         test_size=test_size,
         random_state=random_state,
         shuffle=True,
-        stratify=egfx_labels if len(set(egfx_labels)) > 1 else None,
     )
 
+    # 실제 연주 데이터
     X_other_test = handmade_features + pedalboard_features
     y_other_test = handmade_labels + pedalboard_labels
 
-    X_test = X_egfx_test + X_other_test
-    y_test = y_egfx_test + y_other_test
-
-    return X_train, y_train, X_test, y_test, X_egfx_test, y_egfx_test, X_other_test, y_other_test
-
-
-def train_decision_tree(X_train, y_train, max_depth=None, random_state=42):
-    model = DecisionTreeClassifier(max_depth=max_depth, random_state=random_state)
-    model.fit(X_train, y_train)
-    return model
+    return (
+        X_train, y_train,
+        X_egfx_test, y_egfx_test,
+        X_other_test, y_other_test
+    )
 
 
-def evaluate_model(model, X_test, y_test):
-    y_pred = model.predict(X_test)
-    accuracy = metrics.accuracy_score(y_test, y_pred)
-    report = metrics.classification_report(y_test, y_pred, digits=4, zero_division=0)
-    labels = sorted(set(y_test))
-    matrix = metrics.confusion_matrix(y_test, y_pred, labels=labels)
-    return accuracy, report, matrix
+# ==============================
+# train 3 models
+# ==============================
+def train_models(X_train, y_train, max_depth=None, random_state=42):  
+    models = {
+        'Drive': DecisionTreeClassifier(max_depth=max_depth, random_state=random_state),
+        'Space': DecisionTreeClassifier(max_depth=max_depth, random_state=random_state),
+        'Phase': DecisionTreeClassifier(max_depth=max_depth, random_state=random_state),
+    }
+
+    for key in models:
+        y = [label[key] for label in y_train]
+        models[key].fit(X_train, y)
+
+    return models
 
 
-def main():
-    parser = argparse.ArgumentParser(description='Train a Decision Tree model on audio feature CSV files.')
-    parser.add_argument('--egfx', default='audio_features_EGFxSet.csv', help='EGFxSet CSV file path')
-    parser.add_argument('--handmade', default='audio_features_handmade.csv', help='handmade CSV file path')
-    parser.add_argument('--pedalboard', default='audio_features_pedalboard.csv', help='pedalboard CSV file path')
-    parser.add_argument('--test-size', type=float, default=0.3, help='Test split fraction for EGFxSet data')
-    parser.add_argument('--max-depth', type=int, default=None, help='Maximum depth of the decision tree')
-    parser.add_argument('--random-state', type=int, default=42, help='Random seed for split and training')
+# ==============================
+# evaluation
+# ==============================
+def evaluate_models(models, X_test, y_test):
+    results = {}
+
+    for key in models:
+        y_true = [label[key] for label in y_test]
+        y_pred = models[key].predict(X_test)
+
+        acc = metrics.accuracy_score(y_true, y_pred)
+        report = metrics.classification_report(y_true, y_pred, zero_division=0)
+
+        results[key] = (acc, report)
+
+    # exact match
+    exact_match = 0
+    for i in range(len(X_test)):
+        pred = {k: models[k].predict([X_test[i]])[0] for k in models}
+        if all(pred[k] == y_test[i][k] for k in models):
+            exact_match += 1
+
+    exact_match_acc = exact_match / len(X_test)
+
+    return results, exact_match_acc
+
+
+# ==============================
+# main
+# ==============================
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Multi-label Decision Tree for audio effects')
+    parser.add_argument('--egfx', default='audio_features_EGFxSet.csv')
+    parser.add_argument('--handmade', default='audio_features_handmade.csv')
+    parser.add_argument('--pedalboard', default='audio_features_pedalboard.csv')
+    parser.add_argument('--test-size', type=float, default=0.3)
+    parser.add_argument('--max-depth', type=int, default=None)
+    parser.add_argument('--random-state', type=int, default=42)
     args = parser.parse_args()
 
     print('Loading datasets...')
     (
-        X_train,
-        y_train,
-        X_test,
-        y_test,
-        X_egfx_test,
-        y_egfx_test,
-        X_other_test,
-        y_other_test,
+        X_train, y_train,
+        X_egfx_test, y_egfx_test,
+        X_other_test, y_other_test
     ) = prepare_datasets(
         args.egfx,
         args.handmade,
@@ -170,30 +186,35 @@ def main():
         random_state=args.random_state,
     )
 
-    print(f'Training samples: {len(X_train)}')
-    print(f'Overall test samples: {len(X_test)}')
-    print(f'EGFxSet split test samples: {len(X_egfx_test)}')
-    print(f'Handmade + Pedalboard test samples: {len(X_other_test)}')
-    print('Label distribution in training set:', Counter(y_train))
-    print('Label distribution in overall test set:', Counter(y_test))
+    print(f'Train samples (EGFx 70%): {len(X_train)}')
+    print(f'EGFx test samples (30%): {len(X_egfx_test)}')
+    print(f'Other test samples (real playing): {len(X_other_test)}')
 
-    print('Training Decision Tree classifier...')
-    model = train_decision_tree(X_train, y_train, max_depth=args.max_depth, random_state=args.random_state)
+    print('Training models...')
+    models = train_models(X_train, y_train, max_depth=args.max_depth, random_state=args.random_state)
 
-    print('Evaluating model...')
-    accuracy_all, report_all, matrix_all = evaluate_model(model, X_test, y_test)
-    accuracy_egfx, _, _ = evaluate_model(model, X_egfx_test, y_egfx_test)
-    accuracy_other, _, _ = evaluate_model(model, X_other_test, y_other_test)
+    # =========================
+    # EGFxSet 평가 (in-domain)
+    # =========================
+    print('\n===== EGFxSet TEST (30%) =====')
+    results_egfx, exact_egfx = evaluate_models(models, X_egfx_test, y_egfx_test)
 
-    print(f'Overall accuracy: {accuracy_all:.4f}')
-    print(f'EGFxSet 30% split accuracy: {accuracy_egfx:.4f}')
-    print(f'Handmade + Pedalboard accuracy: {accuracy_other:.4f}')
-    print('\nOverall classification report:\n')
-    print(report_all)
-    print('Overall confusion matrix:')
-    print(matrix_all)
-    print('Classes:', list(model.classes_))
+    for key in results_egfx:
+        acc, report = results_egfx[key]
+        print(f'\n[{key}] Accuracy: {acc:.4f}')
+        print(report)
 
+    print(f'Exact match accuracy: {exact_egfx:.4f}')
 
-if __name__ == '__main__':
-    main()
+    # =========================
+    # 실제 연주 평가 (out-of-domain)
+    # =========================
+    print('\n===== REAL PLAYING TEST (handmade + pedalboard) =====')
+    results_other, exact_other = evaluate_models(models, X_other_test, y_other_test)
+
+    for key in results_other:
+        acc, report = results_other[key]
+        print(f'\n[{key}] Accuracy: {acc:.4f}')
+        print(report)
+
+    print(f'Exact match accuracy: {exact_other:.4f}')
