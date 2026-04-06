@@ -4,7 +4,6 @@ import os
 from collections import Counter
 
 from sklearn import metrics
-from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 
@@ -33,6 +32,39 @@ def parse_filename(filename):
     return parts[0] if parts else ''
 
 
+def map_to_group(effect_type):
+    effect_type = effect_type.strip()
+    if not effect_type:
+        return None
+
+    lower = effect_type.lower()
+    if any(token in lower for token in ['drive', 'dist', 'overdrive', 'fuzz', 'crunch', 'boost', 'bluesdriver', 'rat', 'tubescreamer']):
+        return 'Drive'
+    if any(token in lower for token in ['delay', 'reverb', 'echo', 'hall', 'space']):
+        return 'Space'
+    if any(token in lower for token in ['chorus', 'phaser', 'phase', 'flanger', 'vibrato']):
+        return 'Phase'
+
+    tokens = effect_type.replace('+', ' ').replace('-', ' ').split()
+    groups = set()
+    for token in tokens:
+        token_lower = token.lower()
+        if token_lower in ['drive', 'dist', 'overdrive', 'fuzz', 'crunch', 'boost', 'bluesdriver', 'rat', 'tubescreamer']:
+            groups.add('Drive')
+        elif token_lower in ['delay', 'reverb', 'echo', 'hall', 'space']:
+            groups.add('Space')
+        elif token_lower in ['chorus', 'phaser', 'phase', 'flanger', 'vibrato']:
+            groups.add('Phase')
+
+    if 'Drive' in groups:
+        return 'Drive'
+    if 'Space' in groups:
+        return 'Space'
+    if 'Phase' in groups:
+        return 'Phase'
+    return None
+
+
 def load_csv_features(csv_path):
     if not os.path.isfile(csv_path):
         raise FileNotFoundError(f'CSV file not found: {csv_path}')
@@ -46,8 +78,9 @@ def load_csv_features(csv_path):
             if 'filename' not in row:
                 raise ValueError('CSV must contain a filename column')
 
-            label = parse_filename(row['filename'])
-            if label == '':
+            label_raw = parse_filename(row['filename'])
+            label = map_to_group(label_raw)
+            if label is None:
                 continue
 
             row_features = []
