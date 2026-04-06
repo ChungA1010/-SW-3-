@@ -35,6 +35,7 @@ def upload_audio(request):
             command = [
                 sys.executable, '-m', 'demucs.separate',
                 '-n', 'htdemucs',
+                '--shifts', '2', 
                 '-o', temp_output_dir,
                 input_path
             ]
