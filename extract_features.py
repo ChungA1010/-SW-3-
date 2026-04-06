@@ -665,63 +665,89 @@ def plot_features(features, y, sr):
     plt.show()
 
 
+def process_audio_file(args):
+    """Process a single audio file and return filename and features."""
+    full_path, effector_dir = args
+    relative_path = os.path.relpath(full_path, effector_dir)
+    filename_with_path = relative_path.replace('\\', '_').replace('/', '_')
+    
+    try:
+        y, sr = librosa.load(full_path, sr=44100, mono=True)
+        features = extract_features(y, sr)
+        # Suppress print statements during parallel processing
+        return (filename_with_path, features, None)
+    except Exception as e:
+        return (filename_with_path, None, str(e))
+
+
 if __name__ == "__main__":
     import os
     import csv
+    from concurrent.futures import ThreadPoolExecutor
     
-    # Get all wav files in test_effector directory and subdirectories
+    # Define subdirectories within test_effector
     effector_dir = "test_effector"
+    subdirs = ["EGFxSet", "handmade", "pedalboard"]
+    
     if not os.path.exists(effector_dir):
         print(f"Directory {effector_dir} not found!")
         exit(1)
     
-    wav_files = []
-    for root, dirs, files in os.walk(effector_dir):
-        for file in files:
-            if file.endswith('.wav'):
-                full_path = os.path.join(root, file)
-                wav_files.append(full_path)
-    
-    if not wav_files:
-        print("No wav files found in test_effector directory!")
-        exit(1)
-    
-    print(f"Found {len(wav_files)} wav files. Processing...")
-    
-    # Extract features for all files
-    results = []
-    feature_keys = None
-    
-    for i, full_path in enumerate(wav_files):
-        filename = os.path.basename(full_path)
-        print(f"Processing {i+1}/{len(wav_files)}: {filename} ...\n")
-        try:
-            y, sr = librosa.load(full_path, sr=44100, mono=True)
+    # Process each subdirectory
+    for subdir in subdirs:
+        subdir_path = os.path.join(effector_dir, subdir)
+        if not os.path.exists(subdir_path):
+            print(f"Subdirectory {subdir_path} not found! Skipping...")
+            continue
+        
+        # Get all wav files in current subdirectory and its subdirectories
+        wav_files = []
+        for root, dirs, files in os.walk(subdir_path):
+            for file in files:
+                if file.endswith('.wav'):
+                    full_path = os.path.join(root, file)
+                    wav_files.append(full_path)
+        
+        if not wav_files:
+            print(f"No wav files found in {subdir_path}! Skipping...")
+            continue
+        
+        print(f"Found {len(wav_files)} wav files in {subdir}. Processing in parallel...")
+        
+        # Process files in parallel
+        results = []
+        feature_keys = None
+        
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            # Create argument list
+            args_list = [(fpath, effector_dir) for fpath in wav_files]
+            
+            # Process files and collect results
+            for i, (filename_with_path, features, error) in enumerate(executor.map(process_audio_file, args_list), 1):
+                print(f"Processed {i}/{len(wav_files)}: {filename_with_path}")
+                
+                if error:
+                    print(f"  Error: {error}")
+                else:
+                    if feature_keys is None:
+                        feature_keys = sorted(features.keys())
+                    row = [filename_with_path] + [features[key] for key in feature_keys]
+                    results.append(row)
+        
+        # Save to CSV (one file per subdirectory)
+        csv_filename = f"audio_features_{subdir}.csv"
+        with open(csv_filename, "w", newline="") as f:
+            writer = csv.writer(f)
+            header = ["filename"] + feature_keys
+            writer.writerow(header)
+            writer.writerows(results)
+        
+        print(f"Features saved to {csv_filename}\n")
+        
+        # Visualize only the first file
+        if wav_files:
+            first_full_path = wav_files[0]
+            print(f"Visualizing features for first file in {subdir}...")
+            y, sr = librosa.load(first_full_path, sr=44100, mono=True)
             features = extract_features(y, sr)
-            if feature_keys is None:
-                feature_keys = sorted(features.keys())
-            row = [filename] + [features[key] for key in feature_keys]
-            results.append(row)
-        except Exception as e:
-            print(f"Error processing {filename}: {e}")
-        finally:
-            print(f"Finished processing {filename}.\n")
-    
-    # Save to CSV
-    csv_filename = "audio_features.csv"
-    with open(csv_filename, "w", newline="") as f:
-        writer = csv.writer(f)
-        header = ["filename"] + feature_keys
-        writer.writerow(header)
-        writer.writerows(results)
-    
-    print(f"Features saved to {csv_filename}")
-    
-    # Visualize only the first file
-    if results:
-        first_full_path = wav_files[0]
-        first_filename = os.path.basename(first_full_path)
-        print(f"Visualizing features for {first_filename}")
-        y, sr = librosa.load(first_full_path, sr=44100, mono=True)
-        features = extract_features(y, sr)
-        plot_features(features, y, sr)
+            plot_features(features, y, sr)
