@@ -1,5 +1,7 @@
 venv/
 .vscode/
 __pycache__/
-test_effector/
+test_effector/EGFxSet/
+test_effector/handmade/
+test_effector/pedalboard/
 test_separation/

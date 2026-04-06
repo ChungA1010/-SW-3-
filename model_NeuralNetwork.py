@@ -118,7 +118,7 @@ def prepare_datasets(egfx_path, handmade_path, pedalboard_path, test_size=0.3, r
 # ==============================
 def train_neural_network(X_train, y_train, max_iter=1000, random_state=42):
     model = MLPClassifier(
-        hidden_layer_sizes=(64, 32),
+        hidden_layer_sizes=(32, 16),
         activation='relu',
         solver='adam',
         max_iter=max_iter,
