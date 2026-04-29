@@ -5,4 +5,5 @@ app_name = 'preprocessing'
 
 urlpatterns = [
     path('audio/', views.upload_audio, name='audio'),
+    path('video/',views.upload_video, name='video'),
 ]
