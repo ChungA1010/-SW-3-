@@ -9,6 +9,7 @@ def track_directory_path(instance, filename):
     # ex: uploads/separated_audio/2026/03/28/12312/vocals.wav
     return f'uploads/separated_audio/{date_path}/{instance.source.id}/{filename}'
 
+
 class SourceAudio(models.Model):
     """model storing information about source audio file uploaded by user"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -16,14 +17,9 @@ class SourceAudio(models.Model):
     file = models.FileField(upload_to='uploads/source_audio/%Y/%m/%d/')
     created_at = models.DateTimeField(auto_now_add=True)
     
-    #possible asynchronous states 
-    #not necessary right now, but maybe later for asynchronous processing
-    status = models.CharField(
-        max_length=20, 
-        choices=[('PENDING', '대기중'), ('PROCESSING', '변환중'),
-                 ('COMPLETED', '완료'), ('FAILED', '실패')],
-        default='PENDING'
-    )
+    
+    class Meta:
+        db_table = 'preprocessing_source_audio'
     
     def __str__(self):
         return self.name
@@ -42,5 +38,8 @@ class SeparatedTrack(models.Model):
     
     track_type = models.CharField(max_length=10, choices=TRACK_CHOICES)
     file = models.FileField(upload_to=track_directory_path)
+    
+    class Meta:
+        db_table = 'preprocessing_separated_track'
     
     

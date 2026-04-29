@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('source_separator', '0002_separatedtrack'),
+        ('preprocessing', '0002_separatedtrack'),
     ]
 
     operations = [
