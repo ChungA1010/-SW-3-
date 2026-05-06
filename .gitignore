@@ -1,0 +1,38 @@
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# Python
+backend/.venv/
+backend/venv/
+backend/__pycache__/
+backend/**/*.pyc
+backend/**/*.pyo
+backend/**/*.pyd
+
+# Environment files
+backend/.env
+frontend/.env.local
+frontend/.env.production.local
+frontend/.env.development.local
+frontend/.env.test.local
+
+# Runtime uploads / generated artifacts
+backend/uploads/*
+backend/downloads/*
+backend/separated/*
+backend/temp/*
+!backend/uploads/.gitkeep
+!backend/downloads/.gitkeep
+!backend/separated/.gitkeep
+!backend/temp/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Optional: ignore large local weight files if you do not want to push them
+# backend/weights/*.pt
+# backend/weights/*.pth
