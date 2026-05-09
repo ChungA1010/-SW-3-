@@ -6,62 +6,52 @@ from collections import Counter
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import StandardScaler
 
 
-def parse_filename(filename):
+# ==============================
+# filename parsing
+# ==============================
+def parse_filename(filename):  # Extract effect tokens from filename
     filename = filename.strip()
     if filename.lower().endswith('.wav'):
         filename = filename[:-4]
 
     if filename.startswith('EGFxSet_'):
-        name = filename[len('EGFxSet_'):]
-        parts = name.split('_')
-        return parts[0] if parts else ''
+        filename = filename[len('EGFxSet_'):]
 
     for prefix in ['handmade_test_', 'pedalboard_test_', 'test_', 'handmade_', 'pedalboard_']:
         if filename.startswith(prefix):
             filename = filename[len(prefix):]
             break
 
-    parts = filename.split('_')
-    return parts[0] if parts else ''
+    tokens = filename.replace('+', '_').replace('-', '_').split('_')
+    return tokens
 
 
-def map_to_group(effect_type):
-    effect_type = effect_type.strip()
-    if not effect_type:
-        return None
+# ==============================
+# multi-label mapping
+# ==============================
+def map_to_groups(tokens):  # Drive / Space / Phase multi-label mapping
+    groups = {'Drive': 0, 'Space': 0, 'Phase': 0}
 
-    lower = effect_type.lower()
-    if any(token in lower for token in ['drive', 'dist', 'overdrive', 'fuzz', 'crunch', 'boost', 'bluesdriver', 'rats', 'rat', 'tubescreamer']):
-        return 'Drive'
-    if any(token in lower for token in ['delay', 'reverb', 'echo', 'hall', 'space']):
-        return 'Space'
-    if any(token in lower for token in ['chorus', 'phaser', 'phase', 'flanger', 'vibrato']):
-        return 'Phase'
-
-    # If multiple groups are present, prefer Drive > Space > Phase by order above
-    tokens = effect_type.replace('+', ' ').replace('-', ' ').split()
-    groups = set()
     for token in tokens:
-        token_lower = token.lower()
-        if token_lower in ['drive', 'dist', 'overdrive', 'fuzz', 'crunch', 'boost', 'bluesdriver', 'rat', 'tubescreamer']:
-            groups.add('Drive')
-        elif token_lower in ['delay', 'reverb', 'echo', 'hall', 'space']:
-            groups.add('Space')
-        elif token_lower in ['chorus', 'phaser', 'phase', 'flanger', 'vibrato']:
-            groups.add('Phase')
+        t = token.lower()
 
-    if 'Drive' in groups:
-        return 'Drive'
-    if 'Space' in groups:
-        return 'Space'
-    if 'Phase' in groups:
-        return 'Phase'
-    return None
+        if any(x in t for x in ['drive', 'dist', 'overdrive', 'fuzz', 'crunch', 'boost', 'bluesdriver', 'rat', 'tubescreamer']):
+            groups['Drive'] = 1
+        if any(x in t for x in ['delay', 'reverb', 'echo', 'hall', 'space']):
+            groups['Space'] = 1
+        if any(x in t for x in ['chorus', 'phaser', 'phase', 'flanger', 'vibrato']):
+            groups['Phase'] = 1
+
+    return groups
 
 
-def load_csv_features(csv_path):
+# ==============================
+# CSV load
+# ==============================
+def load_csv_features(csv_path):  # CSV → feature + multi-label
     if not os.path.isfile(csv_path):
         raise FileNotFoundError(f'CSV file not found: {csv_path}')
 
@@ -74,10 +64,8 @@ def load_csv_features(csv_path):
             raise ValueError('CSV must contain a filename column')
 
         for row in reader:
-            label_raw = parse_filename(row['filename'])
-            label = map_to_group(label_raw)
-            if label is None:
-                continue
+            tokens = parse_filename(row['filename'])
+            label_dict = map_to_groups(tokens)
 
             row_features = []
             for key, value in row.items():
@@ -92,7 +80,7 @@ def load_csv_features(csv_path):
                 continue
 
             features.append(row_features)
-            labels.append(label)
+            labels.append([label_dict['Drive'], label_dict['Space'], label_dict['Phase']])
 
     if not features:
         raise ValueError(f'No valid rows found in {csv_path}')
@@ -100,6 +88,9 @@ def load_csv_features(csv_path):
     return features, labels
 
 
+# ==============================
+# dataset split
+# ==============================
 def prepare_datasets(egfx_path, handmade_path, pedalboard_path, test_size=0.3, random_state=42):
     egfx_features, egfx_labels = load_csv_features(egfx_path)
     handmade_features, handmade_labels = load_csv_features(handmade_path)
@@ -111,21 +102,24 @@ def prepare_datasets(egfx_path, handmade_path, pedalboard_path, test_size=0.3, r
         test_size=test_size,
         random_state=random_state,
         shuffle=True,
-        stratify=egfx_labels if len(set(egfx_labels)) > 1 else None,
     )
 
     X_other_test = handmade_features + pedalboard_features
     y_other_test = handmade_labels + pedalboard_labels
+
     X_test = X_egfx_test + X_other_test
     y_test = y_egfx_test + y_other_test
 
     return X_train, y_train, X_test, y_test, X_egfx_test, y_egfx_test, X_other_test, y_other_test
 
 
+# ==============================
+# train model (multi-output)
+# ==============================
 def train_neural_network(X_train, y_train, max_iter=1000, random_state=42):
     model = MLPClassifier(
-        hidden_layer_sizes=(),
-        activation='logistic',
+        hidden_layer_sizes=(32, 16),
+        activation='relu',
         solver='adam',
         max_iter=max_iter,
         random_state=random_state,
@@ -135,23 +129,34 @@ def train_neural_network(X_train, y_train, max_iter=1000, random_state=42):
     return model
 
 
+# ==============================
+# evaluation
+# ==============================
 def evaluate_model(model, X_test, y_test):
     y_pred = model.predict(X_test)
-    accuracy = metrics.accuracy_score(y_test, y_pred)
-    report = metrics.classification_report(y_test, y_pred, digits=4, zero_division=0)
-    labels = sorted(set(y_test))
-    matrix = metrics.confusion_matrix(y_test, y_pred, labels=labels)
-    return accuracy, report, matrix
+
+    # 각 label accuracy
+    acc_drive = metrics.accuracy_score([y[0] for y in y_test], [y[0] for y in y_pred])
+    acc_space = metrics.accuracy_score([y[1] for y in y_test], [y[1] for y in y_pred])
+    acc_phase = metrics.accuracy_score([y[2] for y in y_test], [y[2] for y in y_pred])
+
+    # exact match
+    exact_match = sum(all(p == t for p, t in zip(pred, true)) for pred, true in zip(y_pred, y_test)) / len(y_test)
+
+    return acc_drive, acc_space, acc_phase, exact_match
 
 
-def main():
-    parser = argparse.ArgumentParser(description='Train a 3-class neural network classifier on audio feature CSV data.')
-    parser.add_argument('--egfx', default='audio_features_EGFxSet.csv', help='EGFxSet CSV file path')
-    parser.add_argument('--handmade', default='audio_features_handmade.csv', help='handmade CSV file path')
-    parser.add_argument('--pedalboard', default='audio_features_pedalboard.csv', help='pedalboard CSV file path')
-    parser.add_argument('--test-size', type=float, default=0.3, help='Fraction of EGFxSet rows held out for EGFxSet test set')
-    parser.add_argument('--max-iter', type=int, default=1000, help='Maximum training iterations for the neural network')
-    parser.add_argument('--random-state', type=int, default=42, help='Random seed for splitting and training')
+# ==============================
+# main
+# ==============================
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Multi-label neural network classifier for audio effects')
+    parser.add_argument('--egfx', default='audio_features_EGFxSet.csv')
+    parser.add_argument('--handmade', default='audio_features_handmade.csv')
+    parser.add_argument('--pedalboard', default='audio_features_pedalboard.csv')
+    parser.add_argument('--test-size', type=float, default=0.3)
+    parser.add_argument('--max-iter', type=int, default=1000)
+    parser.add_argument('--random-state', type=int, default=42)
     args = parser.parse_args()
 
     print('Loading datasets...')
@@ -172,43 +177,31 @@ def main():
         random_state=args.random_state,
     )
 
-    print(f'Training samples: {len(X_train)}')
-    print(f'Overall test samples: {len(X_test)}')
-    print(f'EGFxSet split test samples: {len(X_egfx_test)}')
-    print(f'Handmade + Pedalboard test samples: {len(X_other_test)}')
-    print('Training classes:', sorted(set(y_train)))
-    print('Test classes:', sorted(set(y_test)))
-    print('Label distribution in training set:', Counter(y_train))
-    print('Label distribution in test set:', Counter(y_test))
+    # =========================
+    # Normalize data
+    # =========================
+    print('Normalizing data...')
+    scaler = StandardScaler()
 
-    print('Training neural network classifier...')
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
+    X_egfx_test = scaler.transform(X_egfx_test)
+    X_other_test = scaler.transform(X_other_test)
+
+    print('Training neural network...')
     model = train_neural_network(X_train, y_train, max_iter=args.max_iter, random_state=args.random_state)
 
-    print('Evaluating model...')
-    accuracy_all, report_all, matrix_all = evaluate_model(model, X_test, y_test)
-    accuracy_egfx, report_egfx, matrix_egfx = evaluate_model(model, X_egfx_test, y_egfx_test)
-    accuracy_other, report_other, matrix_other = evaluate_model(model, X_other_test, y_other_test)
+    print('\n===== Overall Test =====')
+    d, s, p, exact = evaluate_model(model, X_test, y_test)
+    print(f'Drive acc: {d:.4f}, Space acc: {s:.4f}, Phase acc: {p:.4f}')
+    print(f'Exact match acc: {exact:.4f}')
 
-    print(f'Overall accuracy: {accuracy_all:.4f}')
-    print(f'EGFxSet 30% split accuracy: {accuracy_egfx:.4f}')
-    print(f'Handmade + Pedalboard accuracy: {accuracy_other:.4f}')
+    print('\n===== EGFxSet (30%) =====')
+    d, s, p, exact = evaluate_model(model, X_egfx_test, y_egfx_test)
+    print(f'Drive acc: {d:.4f}, Space acc: {s:.4f}, Phase acc: {p:.4f}')
+    print(f'Exact match acc: {exact:.4f}')
 
-    print('\nOverall classification report:\n')
-    print(report_all)
-    print('Overall confusion matrix:')
-    print(matrix_all)
-    print('Overall classes:', sorted(set(y_test)))
-
-    print('\nEGFxSet subset classification report:\n')
-    print(report_egfx)
-    print('EGFxSet confusion matrix:')
-    print(matrix_egfx)
-
-    print('\nHandmade + Pedalboard subset classification report:\n')
-    print(report_other)
-    print('Handmade + Pedalboard confusion matrix:')
-    print(matrix_other)
-
-
-if __name__ == '__main__':
-    main()
+    print('\n===== Real Playing =====')
+    d, s, p, exact = evaluate_model(model, X_other_test, y_other_test)
+    print(f'Drive acc: {d:.4f}, Space acc: {s:.4f}, Phase acc: {p:.4f}')
+    print(f'Exact match acc: {exact:.4f}')
