@@ -175,5 +175,8 @@ def visualize_features(csv_file):
 
 
 if __name__ == '__main__':
-    csv_file = 'audio_features_EGFxSet.csv'
+    import os
+    here = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(here)
+    csv_file = os.path.join(project_root, 'csv', 'audio_features_EGFxSet.csv')
     visualize_features(csv_file)

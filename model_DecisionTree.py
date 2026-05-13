@@ -165,9 +165,13 @@ def evaluate_models(models, X_test, y_test):
 # ==============================
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Multi-label Decision Tree for audio effects')
-    parser.add_argument('--egfx', default='audio_features_EGFxSet.csv')
-    parser.add_argument('--handmade', default='audio_features_handmade.csv')
-    parser.add_argument('--pedalboard', default='audio_features_pedalboard.csv')
+    here = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(here)
+    csv_dir = os.path.join(project_root, 'csv')
+
+    parser.add_argument('--egfx', default=os.path.join(csv_dir, 'audio_features_EGFxSet.csv'))
+    parser.add_argument('--handmade', default=os.path.join(csv_dir, 'audio_features_handmade.csv'))
+    parser.add_argument('--pedalboard', default=os.path.join(csv_dir, 'audio_features_pedalboard.csv'))
     parser.add_argument('--test-size', type=float, default=0.3)
     parser.add_argument('--max-depth', type=int, default=None)
     parser.add_argument('--random-state', type=int, default=42)
