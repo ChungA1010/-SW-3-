@@ -33,6 +33,8 @@ def main(csv_path=None):
     here = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(here)
     csv_dir = os.path.join(project_root, 'csv')
+    analysis_dir = os.path.join(csv_dir, 'feature_analysis')
+    os.makedirs(analysis_dir, exist_ok=True)
     if csv_path is None:
         csv_path = os.path.join(csv_dir, 'features_pedalboarded_handmade.csv')
 
@@ -65,7 +67,7 @@ def main(csv_path=None):
     df_clean_eff = pd.DataFrame(results_clean_vs_eff, columns=['feature', 'mean_clean', 'mean_effected', 'cohen_d', 'tstat', 'pval'])
     df_clean_eff['abs_cohen'] = df_clean_eff['cohen_d'].abs()
     df_clean_eff = df_clean_eff.sort_values('abs_cohen', ascending=False)
-    df_clean_eff.to_csv(os.path.join(csv_dir, 'analysis_clean_vs_effected.csv'), index=False)
+    df_clean_eff.to_csv(os.path.join(analysis_dir, 'analysis_clean_vs_effected.csv'), index=False)
 
     df_num = df.dropna(subset=['intensity_num']).copy()
     corr_results = []
@@ -79,7 +81,7 @@ def main(csv_path=None):
                 rho, p = (np.nan, np.nan)
             corr_results.append((feat, rho, p))
     df_corr = pd.DataFrame(corr_results, columns=['feature', 'spearman_rho', 'pval']).sort_values('spearman_rho', key=lambda s: s.abs(), ascending=False)
-    df_corr.to_csv(os.path.join(csv_dir, 'analysis_intensity_correlation.csv'), index=False)
+    df_corr.to_csv(os.path.join(analysis_dir, 'analysis_intensity_correlation.csv'), index=False)
 
     weak = df_num[df_num['intensity_num'] <= 25]
     strong = df_num[df_num['intensity_num'] >= 75]
@@ -96,7 +98,7 @@ def main(csv_path=None):
     df_ws = pd.DataFrame(results_ws, columns=['feature', 'n_weak', 'n_strong', 'cohen_d', 'tstat', 'pval'])
     df_ws['abs_cohen'] = df_ws['cohen_d'].abs()
     df_ws = df_ws.sort_values('abs_cohen', ascending=False)
-    df_ws.to_csv(os.path.join(csv_dir, 'analysis_weak_vs_strong.csv'), index=False)
+    df_ws.to_csv(os.path.join(analysis_dir, 'analysis_weak_vs_strong.csv'), index=False)
 
     print('\nTop features by effect size (clean vs effected):')
     print(df_clean_eff[['feature', 'mean_clean', 'mean_effected', 'cohen_d']].head(15).to_string(index=False))

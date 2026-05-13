@@ -268,14 +268,13 @@ def extract_features(y, sr):
 
 def process_audio_file(args):
     full_path, effector_dir = args
-    relative_path = os.path.relpath(full_path, effector_dir)
-    filename_with_path = relative_path.replace('\\', '_').replace('/', '_')
+    filename_only = os.path.basename(full_path)
     try:
         y, sr = librosa.load(full_path, sr=44100, mono=True)
         features = extract_features(y, sr)
-        return (filename_with_path, features, None)
+        return (filename_only, features, None)
     except Exception as e:
-        return (filename_with_path, None, str(e))
+        return (filename_only, None, str(e))
 
 
 if __name__ == "__main__":
@@ -288,8 +287,7 @@ if __name__ == "__main__":
     os.makedirs(csv_dir, exist_ok=True)
 
     effector_dir = os.path.join(project_root, "test_effector")
-    target_subdir = "pedalboard"
-    subdir_path = os.path.join(effector_dir, target_subdir)
+    subdir_path = os.path.join(effector_dir, "pedalboard", "play")
 
     if not os.path.exists(subdir_path):
         print(f"Directory {subdir_path} not found!")
@@ -313,9 +311,20 @@ if __name__ == "__main__":
         if len(parts) > 0 and parts[0].lower() == 'pedalboard':
             parts = parts[1:]
         effect = parts[0] if len(parts) > 0 else ''
-        intensity = parts[1] if len(parts) > 1 else ''
-        play = '_'.join(parts[2:]) if len(parts) > 2 else ''
+        
+        # Determine if this effect type expects intensity
         e = effect.lower()
+        needs_intensity = 'clean' not in e  # Only non-clean effects have intensity
+        
+        # Parse intensity if expected
+        if needs_intensity and len(parts) > 1 and parts[1].isdigit():
+            intensity = parts[1]
+            play = '_'.join(parts[2:]) if len(parts) > 2 else ''
+        else:
+            intensity = ''
+            play = '_'.join(parts[1:]) if len(parts) > 1 else ''
+        
+        # Determine top category
         if 'clean' in e:
             top = 'clean'
         elif any(k in e for k in ('drive', 'dist', 'overdrive', 'od')):
