@@ -121,6 +121,13 @@ class ToneMatchModel:
         audio = np.nan_to_num(audio.astype(np.float32), nan=0.0, posinf=0.0, neginf=0.0)
         if audio.size == 0:
             raise ValueError(f"Audio file is empty: {audio_path}")
+
+        # Peak normalization: equalizes recording gain so that rms-dependent
+        # features reflect effector character, not the user's volume knob.
+        peak = float(np.max(np.abs(audio)))
+        if peak > 0.0:
+            audio = audio / peak
+
         max_samples = int(self.sample_rate * self.max_analysis_seconds)
         return audio[:max_samples] if audio.size > max_samples else audio
 
