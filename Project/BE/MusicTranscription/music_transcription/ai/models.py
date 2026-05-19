@@ -11,7 +11,34 @@ class RecordedTrack(models.Model):
 
 
 class Effector(models.Model):
+    class Level(models.TextChoices):
+        OFF = 'off', 'Off'
+        HALF = '50', '50%'
+        FULL = '100', '100%'
+    
     source = models.ForeignKey(SeparatedTrack, 
                                on_delete=models.CASCADE,
                                related_name='effector_values')
+    distortion = models.CharField(
+        max_length=3,
+        choices=Level.choices,
+        null=True,
+        default=None,
+        blank=True
+    )
+    delay = models.CharField(
+        max_length=3,
+        choices=Level.choices,
+        null=True,
+        default=None,
+        blank=True
+    )
+    phase = models.CharField(
+        max_length=3,
+        choices=Level.choices,
+        null=True,
+        default=None,
+        blank=True
+    )
+    
     

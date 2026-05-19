@@ -1,18 +1,15 @@
 import requests
-import torch.nn.functional as F
+import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from pathlib import Path
-from .apps import AiConfig
 import tempfile
 import os
 
 from preprocessing.views import upload_audio, upload_video
 
 # 전처리 함수 및 모델 클래스 임포트
-from .audio_utils import load_mono_audio, pad_or_crop_waveform, waveform_to_sequence_tensor
 from preprocessing.models import SeparatedTrack
-from .models import RecordedTrack
+from .models import Effector, RecordedTrack
 
 
 COLAB_API_URL = "https://blissful-entrench-donut.ngrok-free.dev/predict"
@@ -71,6 +68,22 @@ def analyze_ai(request):
 
     # 3. 전처리가 완료된 오디오 경로(track_path)를 코랩 AI 전송함수로 전달
     ai_result = run_ai_inference(prep_result["track_path"])
+    
+    #이펙터 값 데이터베이스에 저장
+    result_data = json.loads(ai_result["result"]) # json response를 dict로 변환
+    
+    dist = result_data.get("dist")
+    delay = result_data.get("delay")
+    phase = result_data.get("phase")
+    
+    effector = Effector(
+        dist=dist,
+        delay=delay,
+        phase=phase
+    )
+    
+    effector.save()
+    
     
     # 4. AI 추론 실패 시 에러 응답
     if not ai_result["success"]:
