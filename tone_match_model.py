@@ -69,8 +69,17 @@ class ToneMatchModel:
     measurements so scores are invariant to recording level.
 
     Cross-validation guards prevent shared features from double-counting:
-    - Space axis : rms is gated by spectral_flux_variance confirmation.
-    - Phase axis : amplitude_modulation is gated by core phase indicators
+
+    - Drive axis [FIX 3] : rms / spectral_flatness / zcr are gated by phase_factor
+                   (derived from spectral_flux increase) to prevent phase
+                   cancellation energy loss from being misread as "drive too weak".
+
+    - Space axis [FIX 1] : rms is gated by spectral_flux_variance confirmation.
+                   spectral_flux_variance / spectral_flatness / spectral_flux
+                   are additionally penalised when drive core confidence is high,
+                   preventing distortion noise-fill from being misread as reverb.
+
+    - Phase axis           : amplitude_modulation is gated by core phase indicators
                    (modulation_energy, spectral_flux, harmonic_ratio).
     """
 
@@ -79,7 +88,9 @@ class ToneMatchModel:
         sample_rate: int = 32000,
         hop_length: int = 256,
         max_analysis_seconds: float = 20.0,
-        action_threshold: int = 12,
+        # [FIX 2a] Lowered from 12 → 10 so that moderate phase effects (e.g. chorus
+        # scoring +8) cross the threshold and emit "raise" / "lower" instead of "keep".
+        action_threshold: int = 10,
     ) -> None:
         self.sample_rate = sample_rate
         self.hop_length = hop_length
@@ -228,28 +239,101 @@ class ToneMatchModel:
     def _build_drive_axis(
         self, ref: dict[str, float], copy: dict[str, float]
     ) -> AxisFeedback:
-        return self._build_axis("drive", self._drive_rules(), ref, copy)
+        """Build drive axis with Phase → Drive cross-validation.  [FIX 3]
+
+        문제: 코러스/페이저의 위상 상쇄(Phase Cancellation)로 카피본의 rms와
+        spectral_flatness가 낮아지고 zcr이 변한다. 단순 drive 스코어러는
+        이를 "드라이브가 원본보다 약함 → Raise drive"로 오판한다.
+
+        해결: 위상계의 핵심 지문인 spectral_flux 증가에서 phase_factor를 계산.
+        spectral_flux는 코러스/페이저의 스펙트럼 스위핑에 가장 예민하게
+        반응하면서, 드라이브 효과와는 혼동되지 않는 최적의 판별자다.
+        phase_factor가 높을수록 아래 세 피처의 가중치를 비율적으로 억제:
+          rms, spectral_flatness, zcr → weight *= (1.0 - phase_factor)
+
+        phase_factor = clip(tanh(sf_signed * sensitivity), 0, 1)
+          - spectral_flux 증가 없음 → phase_factor ≈ 0 → 억제 없음, 전체 가중치 유지
+          - spectral_flux 명확히 증가 → phase_factor → 1 → 세 피처 가중치 → 0
+        """
+        # spectral_flux의 "increase" 방향 signed delta → 위상계 존재 확신도 계산
+        sf_signed = self._signed_delta(ref, copy, "spectral_flux", "increase")
+        phase_factor = float(np.clip(np.tanh(sf_signed * DEFAULT_SENSITIVITY) * 1.5 , 0.0, 1.0))
+
+        # 위상 상쇄가 흉내 낼 수 있는 drive 피처들의 억제 비율.
+        # phase_factor가 클수록 이 세 피처는 신뢰할 수 없는 drive 지표가 된다.
+        phase_suppressed_scale = 1.0 - phase_factor
+
+        return self._build_axis(
+            "drive", self._drive_rules(), ref, copy,
+            overrides={
+                "rms":               phase_suppressed_scale,
+                "spectral_flatness": phase_suppressed_scale,
+                "zcr":               phase_suppressed_scale,
+            },
+        )
 
     def _build_space_axis(
         self, ref: dict[str, float], copy: dict[str, float]
     ) -> AxisFeedback:
-        """Build space axis with rms cross-validation.
+        """Build space axis with rms cross-validation and Drive → Space cross-validation.
 
-        Problem  : rms rises strongly under drive too, so a naïve space scorer
-                   would misread a heavy-drive copy as having more space.
-        Solution : gate the rms contribution by how much spectral_flux_variance
-                   moves in the space direction (decreasing). sfv is largely
-                   insensitive to drive and therefore acts as a reliable
-                   space-specific discriminator.
+        [기존] rms 교차 검증:
+        문제: rms는 드라이브가 걸려도 올라가므로, 단순 스코어러는 헤비 드라이브
+        카피본을 "스페이스가 더 많다"고 오판한다.
+        해결: sfv(spectral_flux_variance)가 space 방향(감소)으로 움직일 때만
+        rms 기여를 허용. sfv는 드라이브에 무관한 신뢰할 수 있는 space 판별자다.
 
         rms_scale = clip(tanh(sfv_signed * sensitivity), 0, 1)
-          - sfv unchanged or wrong direction → rms_scale ≈ 0  → rms contributes 0
-          - sfv clearly decreasing (space)   → rms_scale → 1  → rms gets full weight
+          - sfv 변화 없거나 반대 방향 → rms_scale ≈ 0 → rms 기여 없음
+          - sfv 명확히 감소(space)    → rms_scale → 1 → rms 전체 가중치 적용
+
+        [FIX 1] Drive → Space 교차 검증:
+        문제: 강한 디스토션은 파형을 압축하고 조용한 구간을 광대역 노이즈로
+        채운다. 이로 인해 spectral_flux_variance가 감소(노이즈는 스펙트럼적으로
+        균일하고 시간적으로 안정적)한다. space 스코어러는 이 압축 아티팩트를
+        리버브의 스무딩으로 착각해 "space를 줄여라"는 오판을 내린다.
+
+        해결: 리버브/딜레이가 만들어낼 수 없는 드라이브 전용 피처 3종으로
+        drive_core_factor를 계산:
+          crest_factor (decrease) — 클리핑이 peak-to-RMS 비율을 낮춤
+          autocorrelation (decrease) — 노이즈가 파형 주기성을 낮춤
+          zcr (increase) — 노이즈가 고주파 영교차를 증가시킴
+        drive 확신도가 높으면, 드라이브가 흉내 낼 수 있는 space 피처들을 억제:
+          spectral_flux_variance, spectral_flatness, spectral_flux
+
+        drive_core_factor = clip(mean(tanh(drive_signals)), 0, 1)
+          - drive 지표 조용함         → factor ≈ 0 → 억제 없음, 전체 가중치
+          - drive 지표 명확히 반응    → factor → 1 → sfv/flatness/flux 가중치 → 0
         """
+        # --- 기존: rms 게이트 (로직 동일) ---
         sfv_signed = self._signed_delta(ref, copy, "spectral_flux_variance", "decrease")
         rms_scale = float(np.clip(np.tanh(sfv_signed * DEFAULT_SENSITIVITY), 0.0, 1.0))
+
+        # --- FIX 1: drive 교차 검증 ---
+        # 리버브/딜레이가 만들어낼 수 없는 드라이브 전용 피처 3종으로 확신도 계산.
+        drive_core_signals = [
+            np.tanh(self._signed_delta(ref, copy, "crest_factor",    "decrease") * DEFAULT_SENSITIVITY),
+            np.tanh(self._signed_delta(ref, copy, "autocorrelation", "decrease") * DEFAULT_SENSITIVITY),
+            np.tanh(self._signed_delta(ref, copy, "zcr",             "increase") * DEFAULT_SENSITIVITY),
+        ]
+        drive_core_factor = float(np.clip(np.mean(drive_core_signals), 0.0, 1.0))
+
+        # drive 확신도가 높을수록 "drive가 흉내 낼 수 있는" space 피처를 억제.
+        drive_penalty_scale = 1.0 - drive_core_factor
+
         return self._build_axis(
-            "space", self._space_rules(), ref, copy, overrides={"rms": rms_scale}
+            "space", self._space_rules(), ref, copy,
+            overrides={
+                # rms: sfv 게이트와 drive 게이트를 곱산(AND)으로 결합.
+                # sfv 게이트: rms 상승이 드라이브가 아닌 공간계(테일 에너지) 때문임을 확인.
+                # drive 게이트: rms 상승이 디스토션 에너지가 아님을 추가로 확인.
+                "rms":                    rms_scale * drive_penalty_scale,
+                # sfv, flatness, flux: 드라이브 압축·노이즈 채움이 이들의 space 방향
+                # 변화를 흉내 낼 수 있으므로, drive 확신도에 비례해 가중치를 억제.
+                "spectral_flux_variance": drive_penalty_scale,
+                "spectral_flatness":      drive_penalty_scale,
+                "spectral_flux":          drive_penalty_scale,
+            },
         )
 
     def _build_phase_axis(
@@ -257,23 +341,26 @@ class ToneMatchModel:
     ) -> AxisFeedback:
         """Build phase axis with amplitude_modulation cross-validation.
 
-        Problem  : amplitude_modulation reacts to drive and space as well.
-                   Counting it unconditionally inflates phase scores for
-                   non-phase effects.
-        Solution : compute a 'core phase score' from the three indicators that
-                   are most specific to chorus/phaser/flanger — modulation_energy,
-                   spectral_flux (phase direction), and harmonic_ratio (decrease).
-                   amplitude_modulation is only credited when those core signals
-                   are collectively positive.
+        문제: amplitude_modulation은 드라이브와 스페이스에도 반응한다.
+        무조건 계산에 포함하면 비위상계 이펙트의 phase 점수가 부풀어 오른다.
+
+        해결: 코러스/페이저/플랜저에 가장 특화된 3개 지표로 'core phase score'를 계산:
+          modulation_energy (LFO 주파수 대역 에너지 상승)
+          spectral_flux (스펙트럼 스위핑에 의한 변화량 상승)
+          harmonic_ratio (콤 필터링에 의한 배음 안정성 하락)
+        이 core 신호들이 집합적으로 양수일 때만 amplitude_modulation을 인정.
 
         am_scale = clip(mean(tanh(core_signals)), 0, 1)
-          - core indicators not firing (mean ≤ 0) → am_scale = 0  → am contributes 0
-          - core indicators strongly positive      → am_scale → 1  → am gets full weight
+          - core 지표 반응 없음 (mean ≤ 0) → am_scale = 0 → am 기여 없음
+          - core 지표 강하게 반응           → am_scale → 1 → am 전체 가중치 적용
+
+        [FIX 2b] spectral_flux 가중치 1.8 → 2.5로 상향.
+        코러스의 핵심 지문인 지속적 스펙트럼 스위핑에 훨씬 예민하게 반응하도록 튜닝.
         """
         core_signals = [
             np.tanh(self._signed_delta(ref, copy, "modulation_energy", "increase") * DEFAULT_SENSITIVITY),
-            np.tanh(self._signed_delta(ref, copy, "spectral_flux", "increase") * DEFAULT_SENSITIVITY),
-            np.tanh(self._signed_delta(ref, copy, "harmonic_ratio", "decrease") * DEFAULT_SENSITIVITY),
+            np.tanh(self._signed_delta(ref, copy, "spectral_flux",     "increase") * DEFAULT_SENSITIVITY),
+            np.tanh(self._signed_delta(ref, copy, "harmonic_ratio",    "decrease") * DEFAULT_SENSITIVITY),
         ]
         core_mean = float(np.mean(core_signals))  # ∈ [-1, 1]
         am_scale = float(np.clip(core_mean, 0.0, 1.0))
@@ -391,6 +478,8 @@ class ToneMatchModel:
     # ------------------------------------------------------------------
 
     def _drive_rules(self) -> list[FeatureRule]:
+        # rms / spectral_flatness / zcr: phase 교차 검증으로 런타임에 오버라이드됨
+        # (위상 상쇄 감지 시 phase_suppressed_scale = 1 - phase_factor 적용)
         return [
             # --- increase with drive ---
             FeatureRule("amplitude_modulation", "increase", "distortion raises RMS envelope variation", weight=2.0),
@@ -405,7 +494,9 @@ class ToneMatchModel:
         ]
 
     def _space_rules(self) -> list[FeatureRule]:
-        # rms weight is overridden at runtime by sfv cross-validation (see _build_space_axis).
+        # rms: sfv 교차 검증 × drive 교차 검증 (곱산 AND 게이트)으로 런타임 오버라이드됨.
+        # spectral_flux_variance / spectral_flatness / spectral_flux:
+        #   drive 교차 검증으로 runtime에 drive_penalty_scale 오버라이드됨.
         return [
             # --- decrease with space ---
             FeatureRule("spectral_flux_variance",       "decrease", "reverb/delay smooths spectral-change variance",  weight=2.0),
@@ -416,23 +507,25 @@ class ToneMatchModel:
             # --- increase with space ---
             FeatureRule("energy_decay",         "increase", "space effects sustain energy in the tail",               weight=1.5),
             FeatureRule("sustain_ratio",        "increase", "reverb extends the voiced portion of the signal",        weight=1.3),
-            FeatureRule("rms",                  "increase", "reverb/delay tail raises average energy (sfv-gated)",    weight=1.2),
+            FeatureRule("rms",                  "increase", "reverb/delay tail raises average energy (sfv+drive gated)", weight=1.2),
             FeatureRule("amplitude_modulation", "increase", "echo repeats modulate the RMS envelope",                 weight=1.2),
             FeatureRule("secondary_peak_count", "increase", "echo/repeat events add onset peaks",                     weight=1.0),
         ]
 
     def _phase_rules(self) -> list[FeatureRule]:
-        # amplitude_modulation weight is overridden at runtime by core-phase cross-validation.
+        # amplitude_modulation: core-phase 교차 검증으로 런타임에 오버라이드됨.
+        # [FIX 2b] spectral_flux 가중치 1.8 → 2.5 상향: 코러스의 핵심 지문인
+        # 지속적 스펙트럼 스위핑에 훨씬 예민하게 반응하도록 튜닝.
         return [
             # --- increase with phase ---
-            FeatureRule("modulation_energy",        "increase", "LFO creates RMS energy in 0.3–8 Hz band",      weight=2.0),
-            FeatureRule("spectral_flux",            "increase", "chorus/phaser continuously sweeps the spectrum", weight=1.8),
-            FeatureRule("delta_mfcc_std",           "increase", "tone colour shifts frame by frame",              weight=1.5),
-            FeatureRule("centroid_modulation_depth","increase", "brightness oscillates with LFO sweep",           weight=1.3),
-            FeatureRule("mfcc_modulation_variance", "increase", "cepstral coefficients vary with modulation",     weight=1.0),
-            FeatureRule("amplitude_modulation",     "increase", "LFO adds amplitude wobble (core-gated)",         weight=1.0),
+            FeatureRule("modulation_energy",         "increase", "LFO creates RMS energy in 0.3–8 Hz band",       weight=2.0),
+            FeatureRule("spectral_flux",             "increase", "chorus/phaser continuously sweeps the spectrum",  weight=2.5),  # was 1.8
+            FeatureRule("delta_mfcc_std",            "increase", "tone colour shifts frame by frame",               weight=1.5),
+            FeatureRule("centroid_modulation_depth", "increase", "brightness oscillates with LFO sweep",            weight=1.3),
+            FeatureRule("mfcc_modulation_variance",  "increase", "cepstral coefficients vary with modulation",      weight=1.0),
+            FeatureRule("amplitude_modulation",      "increase", "LFO adds amplitude wobble (core-gated)",          weight=1.0),
             # --- decrease with phase ---
-            FeatureRule("harmonic_ratio",           "decrease", "comb filtering disrupts stable harmonic structure", weight=1.8),
+            FeatureRule("harmonic_ratio",            "decrease", "comb filtering disrupts stable harmonic structure", weight=1.8),
         ]
 
     # ------------------------------------------------------------------
