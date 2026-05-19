@@ -1,7 +1,0 @@
-librosa
-numpy
-pandas
-scikit-learn
-torch
-torchaudio
-
