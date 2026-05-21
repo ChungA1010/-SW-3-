@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Owner\\\\Desktop\\\\-SW-3-\" -Recurse | Select-Object FullName, Extension | Where-Object { $_.Extension -eq \".py\" })",
+      "Bash(python -c ' *)",
+      "Bash(python -c \"import sys; sys.stdout.buffer.write\\(sys.stdin.buffer.read\\(\\)\\)\")",
+      "Bash(python bva_test.py --wav-dir play --recording solo --output bva_results.json)",
+      "Bash(python bva_test.py --wav-dir play --recording solo)"
+    ]
+  }
+}

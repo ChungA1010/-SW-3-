@@ -55,7 +55,7 @@ class AxisFeedback:
     copy_amount: int
     difference: int      # positive = copy has more of the effect than reference
     similarity: float    # 1 - |difference| / 100
-    action: str          # "raise" | "lower" | "keep"
+    action: str          # "turn_on" | "raise" | "keep" | "lower" | "turn_off"
     message: str
     features: list[FeatureComparison]
 
@@ -88,9 +88,8 @@ class ToneMatchModel:
         sample_rate: int = 32000,
         hop_length: int = 256,
         max_analysis_seconds: float = 20.0,
-        # [FIX 2a] Lowered from 12 → 10 so that moderate phase effects (e.g. chorus
-        # scoring +8) cross the threshold and emit "raise" / "lower" instead of "keep".
-        action_threshold: int = 10,
+        
+        action_threshold: int = 12,
     ) -> None:
         self.sample_rate = sample_rate
         self.hop_length = hop_length
@@ -255,20 +254,58 @@ class ToneMatchModel:
           - spectral_flux 증가 없음 → phase_factor ≈ 0 → 억제 없음, 전체 가중치 유지
           - spectral_flux 명확히 증가 → phase_factor → 1 → 세 피처 가중치 → 0
         """
-        # spectral_flux의 "increase" 방향 signed delta → 위상계 존재 확신도 계산
-        sf_signed = self._signed_delta(ref, copy, "spectral_flux", "increase")
-        phase_factor = float(np.clip(np.tanh(sf_signed * DEFAULT_SENSITIVITY) * 1.5 , 0.0, 1.0))
+        # ── Space → Drive 누설 방어 (리버브/딜레이 추가·제거 양방향) ─────────────────
+        # sfv(spectral_flux_variance)만 사용: 리버브는 sfv를 급격히 낮추지만
+        # 드라이브/코러스는 sfv를 거의 바꾸지 않는다는 물리적 차이를 이용.
+        # sensitivity=4.0: sfv 20% 변화(인접 단계 reverb_25→50)도 factor≈1.0으로 완전 차단.
+        # energy_decay·sustain은 드라이브 압축 효과로도 변하므로 제외.
+        sfv_increase = self._signed_delta(ref, copy, "spectral_flux_variance", "increase")
+        sfv_decrease = self._signed_delta(ref, copy, "spectral_flux_variance", "decrease")
 
-        # 위상 상쇄가 흉내 낼 수 있는 drive 피처들의 억제 비율.
-        # phase_factor가 클수록 이 세 피처는 신뢰할 수 없는 drive 지표가 된다.
-        phase_suppressed_scale = 1.0 - phase_factor
+        # 리버브 걷힘: sfv↑
+        space_unsmear_factor = float(np.clip(
+            np.tanh(sfv_increase * 4.0) * 1.5, 0.0, 1.0
+        ))
+        # 리버브 추가: sfv↓
+        space_smear_factor = float(np.clip(
+            np.tanh(sfv_decrease * 4.0) * 1.5, 0.0, 1.0
+        ))
+
+        # ── Phase → Drive 누설 방어 (코러스 추가·제거 양방향) ─────────────────────
+        # 코러스 정방향: mfcc_var 증가 = LFO 변조 깊어짐.
+        # sensitivity × 3.0 = 6.0: mfcc_var 13.4% 이상 변화 시 factor=1.0 → 완전 차단.
+        # (인접 단계 chorus 50→75에서 mfcc 15% 변화도 차단)
+        mfcc_mod_increase = self._signed_delta(ref, copy, "mfcc_modulation_variance", "increase")
+        phase_interference_factor = float(np.clip(
+            np.tanh(mfcc_mod_increase * DEFAULT_SENSITIVITY * 3.0) * 1.5, 0.0, 1.0
+        ))
+
+        # 코러스 역방향: mfcc_var 감소 = 코러스 LFO 변조 약해짐.
+        # space_unsmear_factor로 게이팅: 코러스 역방향은 sfv↑, 드라이브 감소는 sfv 불변.
+        mfcc_mod_decrease = self._signed_delta(ref, copy, "mfcc_modulation_variance", "decrease")
+        phase_leaving_mfcc = float(np.clip(
+            np.tanh(mfcc_mod_decrease * DEFAULT_SENSITIVITY * 3.0) * 1.5, 0.0, 1.0
+        ))
+        phase_leaving_factor = phase_leaving_mfcc * float(np.clip(space_unsmear_factor * 3.0, 0.0, 1.0))
+
+        # 네 요인 중 하나라도 강하면 드라이브 피처 전체 억제 (균일 scale=0 → axis_delta=0)
+        drive_penalty_scale = 1.0 - max(
+            space_smear_factor, space_unsmear_factor,
+            phase_interference_factor, phase_leaving_factor,
+        )
 
         return self._build_axis(
             "drive", self._drive_rules(), ref, copy,
             overrides={
-                "rms":               phase_suppressed_scale,
-                "spectral_flatness": phase_suppressed_scale,
-                "zcr":               phase_suppressed_scale,
+                "rms":                  drive_penalty_scale,
+                "spectral_flatness":    drive_penalty_scale,
+                "zcr":                  drive_penalty_scale,
+                "amplitude_modulation": drive_penalty_scale,
+                "spectral_bandwidth":   drive_penalty_scale,
+                "autocorrelation":      drive_penalty_scale,
+                "harmonic_ratio":       drive_penalty_scale,
+                # 코러스 제거 시 crest_factor(다이내믹 복원)도 드라이브 감소로 오판하므로 차단
+                "crest_factor":         drive_penalty_scale,
             },
         )
 
@@ -321,18 +358,26 @@ class ToneMatchModel:
         # drive 확신도가 높을수록 "drive가 흉내 낼 수 있는" space 피처를 억제.
         drive_penalty_scale = 1.0 - drive_core_factor
 
+        # 1. 코러스가 폭주할 때 (정방향 방어): 배음 파괴 + 모듈레이션 증가
+        hr_decrease = self._signed_delta(ref, copy, "harmonic_ratio", "decrease")
+        mfcc_mod_increase = self._signed_delta(ref, copy, "mfcc_modulation_variance", "increase")
+        phase_explosion_factor = float(np.clip(np.tanh(max(hr_decrease, mfcc_mod_increase) * 2.0) * 1.5, 0.0, 1.0))
+
+        # 2. 코러스가 확 빠질 때 (역방향 방어): 배음 복원 + 모듈레이션 감소
+        hr_increase = self._signed_delta(ref, copy, "harmonic_ratio", "increase")
+        mfcc_mod_decrease = self._signed_delta(ref, copy, "mfcc_modulation_variance", "decrease")
+        phase_leaving_factor = float(np.clip(np.tanh(max(hr_increase, mfcc_mod_decrease) * 2.0) * 1.5, 0.0, 1.0))
+
+        # 코러스가 켜지든 꺼지든 공간계가 간섭받지 않도록 양방향 제어
+        space_penalty_scale = 1.0 - max(phase_explosion_factor, phase_leaving_factor)
+
         return self._build_axis(
             "space", self._space_rules(), ref, copy,
             overrides={
-                # rms: sfv 게이트와 drive 게이트를 곱산(AND)으로 결합.
-                # sfv 게이트: rms 상승이 드라이브가 아닌 공간계(테일 에너지) 때문임을 확인.
-                # drive 게이트: rms 상승이 디스토션 에너지가 아님을 추가로 확인.
-                "rms":                    rms_scale * drive_penalty_scale,
-                # sfv, flatness, flux: 드라이브 압축·노이즈 채움이 이들의 space 방향
-                # 변화를 흉내 낼 수 있으므로, drive 확신도에 비례해 가중치를 억제.
-                "spectral_flux_variance": drive_penalty_scale,
-                "spectral_flatness":      drive_penalty_scale,
-                "spectral_flux":          drive_penalty_scale,
+                "spectral_flux_variance": space_penalty_scale,
+                "spectral_contrast":      space_penalty_scale,
+                "spectral_flatness":      space_penalty_scale,
+                "spectral_flux":          space_penalty_scale,
             },
         )
 
@@ -364,8 +409,57 @@ class ToneMatchModel:
         ]
         core_mean = float(np.mean(core_signals))  # ∈ [-1, 1]
         am_scale = float(np.clip(core_mean, 0.0, 1.0))
+
+        # ── Space → Phase 누설 방어 (리버브 추가·제거 양방향) ─────────────────────
+        # OR 게이트: sfv + energy_decay + sustain_ratio → 리버브(꼬리)와 코러스(LFO) 구분.
+        # energy_decay·sustain은 리버브 전용 지문: 코러스 테스트에서 오탐 없음.
+        # sensitivity=4.0: sfv 20% 변화(인접 단계 reverb)도 factor≈1.0 → 완전 차단.
+        sfv_decrease = self._signed_delta(ref, copy, "spectral_flux_variance", "decrease")
+        sfv_increase = self._signed_delta(ref, copy, "spectral_flux_variance", "increase")
+        ed_increase  = self._signed_delta(ref, copy, "energy_decay",           "increase")
+        ed_decrease  = self._signed_delta(ref, copy, "energy_decay",           "decrease")
+        sr_increase  = self._signed_delta(ref, copy, "sustain_ratio",          "increase")
+        sr_decrease  = self._signed_delta(ref, copy, "sustain_ratio",          "decrease")
+
+        # 리버브 추가: sfv↓ OR energy_decay↑ OR sustain↑
+        space_smear_factor   = float(np.clip(
+            np.tanh(max(sfv_decrease, ed_increase, sr_increase) * 4.0) * 1.5, 0.0, 1.0
+        ))
+        # 리버브 걷힘: sfv↑ OR energy_decay↓ OR sustain↓
+        space_unsmear_factor = float(np.clip(
+            np.tanh(max(sfv_increase, ed_decrease, sr_decrease) * 4.0) * 1.5, 0.0, 1.0
+        ))
+
+        space_penalty_scale = 1.0 - max(space_smear_factor, space_unsmear_factor)
+
+        # --- FIX 5: 드라이브 변화 → 위상계 오판 방어막 ---
+        # crest_factor = 드라이브 클리핑의 직접 지문. 코러스/리버브는 crest_factor에 거의 영향 없음.
+        # 양방향 감지: drive 추가(crest↓), drive 제거(crest↑) 모두 차단.
+        crest_forward = self._signed_delta(ref, copy, "crest_factor", "decrease")  # drive 추가
+        crest_reverse = self._signed_delta(ref, copy, "crest_factor", "increase")  # drive 제거
+        drive_intrusion_factor = float(np.clip(
+            np.tanh(max(crest_forward, crest_reverse) * DEFAULT_SENSITIVITY * 3.0) * 1.5,
+            0.0, 1.0,
+        ))
+        # 선택적 억제: drive에 오염되는 피처만 억제, mfcc/delta/centroid는 앵커로 유지.
+        # 코러스 고유 피처(mfcc_modulation_variance 등)는 full weight 유지 → 코러스 감지 보존.
+        drive_penalty_phase = 1.0 - drive_intrusion_factor
+
+        # drive_penalty_phase를 모든 피처에 균일 적용:
+        #   drive_penalty_phase=0  → 전체 weight=0 → axis_delta=0 → diff=0 (완전 차단)
+        #   drive_penalty_phase=k>0 → 분자/분모 모두 k 곱 → 상쇄, 방향 보존 (코러스 감지 무손실)
         return self._build_axis(
-            "phase", self._phase_rules(), ref, copy, overrides={"amplitude_modulation": am_scale}
+            "phase", self._phase_rules(), ref, copy,
+            overrides={
+                "spectral_flux":             space_penalty_scale * drive_penalty_phase,
+                "modulation_energy":         space_penalty_scale * drive_penalty_phase,
+                "harmonic_ratio":            space_penalty_scale * drive_penalty_phase,
+                "amplitude_modulation":      am_scale * space_penalty_scale * drive_penalty_phase,
+                "delta_mfcc_std":            space_penalty_scale * drive_penalty_phase,
+                "centroid_modulation_depth": space_penalty_scale * drive_penalty_phase,
+                "mfcc_modulation_variance":  space_penalty_scale * drive_penalty_phase,
+            },
+            threshold=5,
         )
 
     def _build_axis(
@@ -375,6 +469,7 @@ class ToneMatchModel:
         ref: dict[str, float],
         copy: dict[str, float],
         overrides: dict[str, float] | None = None,
+        threshold: int | None = None,
     ) -> AxisFeedback:
         """Score one axis using weighted tanh-scaled delta ratios.
 
@@ -410,7 +505,7 @@ class ToneMatchModel:
         difference = int(round(axis_delta * 100))
         copy_amount = int(np.clip(50 + difference, 0, 100))
         similarity = round(max(0.0, 1.0 - abs(difference) / 100.0), 3)
-        action = self._action_from_difference(difference)
+        action = self._action_from_difference(difference, threshold)
 
         feature_rows = [self._compare_feature(rule, ref, copy) for rule in rules]
         feature_rows.sort(key=lambda f: abs(f.percent_change), reverse=True)
@@ -481,16 +576,16 @@ class ToneMatchModel:
         # rms / spectral_flatness / zcr: phase 교차 검증으로 런타임에 오버라이드됨
         # (위상 상쇄 감지 시 phase_suppressed_scale = 1 - phase_factor 적용)
         return [
-            # --- increase with drive ---
-            FeatureRule("amplitude_modulation", "increase", "distortion raises RMS envelope variation", weight=2.0),
-            FeatureRule("rms",                  "increase", "drive raises average signal energy",        weight=1.8),
-            FeatureRule("zcr",                  "increase", "clipping creates high-frequency zero crossings", weight=1.5),
-            FeatureRule("spectral_bandwidth",   "increase", "harmonics widen the frequency spread",     weight=1.3),
-            FeatureRule("spectral_flatness",    "increase", "distortion makes the spectrum noise-like",  weight=1.0),
+            # 리버브가 걷힐 때 발생하는 선명함에 속지 않도록 sensitivity를 4.0으로 상향
+            FeatureRule("amplitude_modulation", "increase", "distortion raises RMS envelope variation", weight=2.0, sensitivity=4.0),
+            FeatureRule("rms",                  "increase", "drive raises average signal energy",        weight=1.8, sensitivity=4.0),
+            FeatureRule("zcr",                  "increase", "clipping creates high-frequency zero crossings", weight=1.5, sensitivity=4.0),
+            FeatureRule("spectral_bandwidth",   "increase", "harmonics widen the frequency spread",      weight=1.3, sensitivity=4.0),
+            FeatureRule("spectral_flatness",    "increase", "distortion makes the spectrum noise-like",  weight=1.0, sensitivity=4.0),
             # --- decrease with drive ---
-            FeatureRule("crest_factor",         "decrease", "clipping reduces peak-to-RMS ratio",       weight=1.8),
-            FeatureRule("autocorrelation",      "decrease", "distortion lowers waveform periodicity",   weight=1.2),
-            FeatureRule("harmonic_ratio",       "decrease", "drive adds percussive transient content",   weight=1.0),
+            FeatureRule("crest_factor",         "decrease", "clipping reduces peak-to-RMS ratio",        weight=1.8, sensitivity=4.0),
+            FeatureRule("autocorrelation",      "decrease", "distortion lowers waveform periodicity",   weight=1.2, sensitivity=4.0),
+            FeatureRule("harmonic_ratio",       "decrease", "drive adds percussive transient content",   weight=1.0, sensitivity=4.0),
         ]
 
     def _space_rules(self) -> list[FeatureRule]:
@@ -498,18 +593,17 @@ class ToneMatchModel:
         # spectral_flux_variance / spectral_flatness / spectral_flux:
         #   drive 교차 검증으로 runtime에 drive_penalty_scale 오버라이드됨.
         return [
-            # --- decrease with space ---
-            FeatureRule("spectral_flux_variance",       "decrease", "reverb/delay smooths spectral-change variance",  weight=2.0),
-            FeatureRule("inter_peak_interval_variance", "decrease", "delay echoes regularize onset spacing",           weight=1.5),
-            FeatureRule("spectral_contrast",            "decrease", "space effects soften inter-band contrast",        weight=1.3),
-            FeatureRule("spectral_flatness",            "decrease", "reverb tail levels out spectral peaks",           weight=1.0),
-            FeatureRule("spectral_flux",                "decrease", "space effects reduce abrupt spectral change",     weight=1.0),
-            # --- increase with space ---
-            FeatureRule("energy_decay",         "increase", "space effects sustain energy in the tail",               weight=1.5),
-            FeatureRule("sustain_ratio",        "increase", "reverb extends the voiced portion of the signal",        weight=1.3),
-            FeatureRule("rms",                  "increase", "reverb/delay tail raises average energy (sfv+drive gated)", weight=1.2),
-            FeatureRule("amplitude_modulation", "increase", "echo repeats modulate the RMS envelope",                 weight=1.2),
-            FeatureRule("secondary_peak_count", "increase", "echo/repeat events add onset peaks",                     weight=1.0),
+            # --- 확실하게 점수를 밀어줄 핵심 지표들 (가중치 상향) ---
+            FeatureRule("spectral_flux_variance", "decrease", "reverb/delay smooths spectral-change variance", weight=3.0),
+            FeatureRule("spectral_flux",          "decrease", "space effects reduce abrupt spectral change",    weight=2.5),
+            
+            # --- 나머지 피처들은 보조 역할 (가중치 하향) ---
+            FeatureRule("spectral_contrast",      "decrease", "space effects soften inter-band contrast",       weight=1.0),
+            FeatureRule("spectral_flatness",      "decrease", "reverb tail levels out spectral peaks",          weight=0.8),
+            FeatureRule("energy_decay",           "increase", "space effects sustain energy in the tail",       weight=1.0),
+            FeatureRule("sustain_ratio",          "increase", "reverb extends the voiced portion of the signal", weight=0.8),
+            FeatureRule("rms",                    "increase", "reverb/delay tail raises average energy",        weight=0.5), # rms는 변동성이 심하니 약하게
+            FeatureRule("amplitude_modulation",   "increase", "echo repeats modulate the RMS envelope",         weight=0.5),
         ]
 
     def _phase_rules(self) -> list[FeatureRule]:
@@ -518,12 +612,13 @@ class ToneMatchModel:
         # 지속적 스펙트럼 스위핑에 훨씬 예민하게 반응하도록 튜닝.
         return [
             # --- increase with phase ---
-            FeatureRule("modulation_energy",         "increase", "LFO creates RMS energy in 0.3–8 Hz band",       weight=2.0),
-            FeatureRule("spectral_flux",             "increase", "chorus/phaser continuously sweeps the spectrum",  weight=2.5),  # was 1.8
-            FeatureRule("delta_mfcc_std",            "increase", "tone colour shifts frame by frame",               weight=1.5),
-            FeatureRule("centroid_modulation_depth", "increase", "brightness oscillates with LFO sweep",            weight=1.3),
-            FeatureRule("mfcc_modulation_variance",  "increase", "cepstral coefficients vary with modulation",      weight=1.0),
-            FeatureRule("amplitude_modulation",      "increase", "LFO adds amplitude wobble (core-gated)",          weight=1.0),
+            # sensitivity 상향: 코러스 25% 같은 미세 변화(delta 5~12%)에 확실히 반응하도록
+            FeatureRule("spectral_flux",             "increase", "chorus/phaser continuously sweeps the spectrum",   weight=6.0, sensitivity=6.0),
+            FeatureRule("modulation_energy",         "increase", "LFO creates RMS energy in 0.3–8 Hz band",         weight=4.0, sensitivity=5.0),
+            FeatureRule("delta_mfcc_std",            "increase", "tone colour shifts frame by frame",                weight=1.5),
+            FeatureRule("centroid_modulation_depth", "increase", "brightness oscillates with LFO sweep",             weight=1.3),
+            FeatureRule("mfcc_modulation_variance",  "increase", "cepstral coefficients vary with modulation",       weight=1.0),
+            FeatureRule("amplitude_modulation",      "increase", "LFO adds amplitude wobble (core-gated)",           weight=1.0),
             # --- decrease with phase ---
             FeatureRule("harmonic_ratio",            "decrease", "comb filtering disrupts stable harmonic structure", weight=1.8),
         ]
@@ -532,19 +627,21 @@ class ToneMatchModel:
     # Action / message helpers
     # ------------------------------------------------------------------
 
-    def _action_from_difference(self, difference: int) -> str:
-        if difference > self.action_threshold:
-            return "lower"
-        if difference < -self.action_threshold:
-            return "raise"
+    def _action_from_difference(self, difference: int, threshold: int | None = None) -> str:
+        t = threshold if threshold is not None else self.action_threshold
+        if difference > 30:   return "turn_off"
+        if difference < -30:  return "turn_on"
+        if difference > t:    return "lower"
+        if difference < -t:   return "raise"
         return "keep"
 
     def _message(self, axis: str, action: str) -> str:
-        if action == "raise":
-            return f"{axis} is weaker than the reference. Raise {axis}."
-        if action == "lower":
-            return f"{axis} is stronger than the reference. Lower {axis}."
-        return f"{axis} is close to the reference. Keep {axis}."
+        axis_kr = {"drive": "드라이브", "space": "공간계", "phase": "위상계"}.get(axis, axis)
+        if action == "turn_on":  return f"[{axis_kr}] 원본에 비해 너무 약하거나 꺼져 있습니다. 켜주세요! 🟢"
+        if action == "raise":    return f"[{axis_kr}] 원본보다 약합니다. 강도를 더 올려주세요. 🔼"
+        if action == "lower":    return f"[{axis_kr}] 원본보다 셉니다. 강도를 줄여주세요. 🔽"
+        if action == "turn_off": return f"[{axis_kr}] 원본에 비해 너무 과하게 걸려 있습니다. 끄거나 대폭 줄여주세요! 🔴"
+        return f"[{axis_kr}] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵"
 
     # ------------------------------------------------------------------
     # Signal-processing helpers (unchanged)

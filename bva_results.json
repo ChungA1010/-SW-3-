@@ -1,0 +1,2844 @@
+{
+  "wav_dir": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play",
+  "recording": "solo",
+  "summary": {
+    "total": 12,
+    "pass": 11,
+    "warn": 0,
+    "fail": 1
+  },
+  "cases": [
+    {
+      "label": "Drive   0→25",
+      "axis": "drive",
+      "expected_dir": "+",
+      "status": "PASS",
+      "diagnosis": "방향 정확 ✓",
+      "ref_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\clean_solo_5.wav",
+      "copy_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\dist_25_solo_5.wav",
+      "note": "",
+      "target_axis": {
+        "axis": "drive",
+        "reference_amount": 50,
+        "copy_amount": 80,
+        "difference": 30,
+        "similarity": 0.7,
+        "action": "lower",
+        "message": "[드라이브] 원본보다 셉니다. 강도를 줄여주세요. 🔽",
+        "features": [
+          {
+            "feature": "rms",
+            "reference_value": 0.125376,
+            "copy_value": 0.212682,
+            "delta": 0.087306,
+            "percent_change": 69.64,
+            "expected_direction": "increase",
+            "meaning": "drive raises average signal energy"
+          },
+          {
+            "feature": "crest_factor",
+            "reference_value": 7.976018,
+            "copy_value": 4.701857,
+            "delta": -3.27416,
+            "percent_change": -41.05,
+            "expected_direction": "decrease",
+            "meaning": "clipping reduces peak-to-RMS ratio"
+          },
+          {
+            "feature": "spectral_bandwidth",
+            "reference_value": 0.085893,
+            "copy_value": 0.094186,
+            "delta": 0.008294,
+            "percent_change": 9.66,
+            "expected_direction": "increase",
+            "meaning": "harmonics widen the frequency spread"
+          },
+          {
+            "feature": "amplitude_modulation",
+            "reference_value": 0.703948,
+            "copy_value": 0.674803,
+            "delta": -0.029145,
+            "percent_change": -4.14,
+            "expected_direction": "increase",
+            "meaning": "distortion raises RMS envelope variation"
+          },
+          {
+            "feature": "spectral_flatness",
+            "reference_value": 0.003276,
+            "copy_value": 0.003172,
+            "delta": -0.000104,
+            "percent_change": -3.18,
+            "expected_direction": "increase",
+            "meaning": "distortion makes the spectrum noise-like"
+          }
+        ]
+      },
+      "all_axes": [
+        {
+          "axis": "drive",
+          "reference_amount": 50,
+          "copy_amount": 80,
+          "difference": 30,
+          "similarity": 0.7,
+          "action": "lower",
+          "message": "[드라이브] 원본보다 셉니다. 강도를 줄여주세요. 🔽",
+          "features": [
+            {
+              "feature": "rms",
+              "reference_value": 0.125376,
+              "copy_value": 0.212682,
+              "delta": 0.087306,
+              "percent_change": 69.64,
+              "expected_direction": "increase",
+              "meaning": "drive raises average signal energy"
+            },
+            {
+              "feature": "crest_factor",
+              "reference_value": 7.976018,
+              "copy_value": 4.701857,
+              "delta": -3.27416,
+              "percent_change": -41.05,
+              "expected_direction": "decrease",
+              "meaning": "clipping reduces peak-to-RMS ratio"
+            },
+            {
+              "feature": "spectral_bandwidth",
+              "reference_value": 0.085893,
+              "copy_value": 0.094186,
+              "delta": 0.008294,
+              "percent_change": 9.66,
+              "expected_direction": "increase",
+              "meaning": "harmonics widen the frequency spread"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.703948,
+              "copy_value": 0.674803,
+              "delta": -0.029145,
+              "percent_change": -4.14,
+              "expected_direction": "increase",
+              "meaning": "distortion raises RMS envelope variation"
+            },
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.003276,
+              "copy_value": 0.003172,
+              "delta": -0.000104,
+              "percent_change": -3.18,
+              "expected_direction": "increase",
+              "meaning": "distortion makes the spectrum noise-like"
+            }
+          ]
+        },
+        {
+          "axis": "space",
+          "reference_amount": 50,
+          "copy_amount": 46,
+          "difference": -4,
+          "similarity": 0.96,
+          "action": "keep",
+          "message": "[공간계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "rms",
+              "reference_value": 0.125376,
+              "copy_value": 0.212682,
+              "delta": 0.087306,
+              "percent_change": 69.64,
+              "expected_direction": "increase",
+              "meaning": "reverb/delay tail raises average energy"
+            },
+            {
+              "feature": "spectral_flux_variance",
+              "reference_value": 2.600621,
+              "copy_value": 2.883973,
+              "delta": 0.283352,
+              "percent_change": 10.9,
+              "expected_direction": "decrease",
+              "meaning": "reverb/delay smooths spectral-change variance"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.515548,
+              "copy_value": 1.632758,
+              "delta": 0.11721,
+              "percent_change": 7.73,
+              "expected_direction": "decrease",
+              "meaning": "space effects reduce abrupt spectral change"
+            },
+            {
+              "feature": "energy_decay",
+              "reference_value": 2.138731,
+              "copy_value": 1.980597,
+              "delta": -0.158133,
+              "percent_change": -7.39,
+              "expected_direction": "increase",
+              "meaning": "space effects sustain energy in the tail"
+            },
+            {
+              "feature": "sustain_ratio",
+              "reference_value": 0.678876,
+              "copy_value": 0.706985,
+              "delta": 0.028109,
+              "percent_change": 4.14,
+              "expected_direction": "increase",
+              "meaning": "reverb extends the voiced portion of the signal"
+            }
+          ]
+        },
+        {
+          "axis": "phase",
+          "reference_amount": 50,
+          "copy_amount": 50,
+          "difference": 0,
+          "similarity": 1.0,
+          "action": "keep",
+          "message": "[위상계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "mfcc_modulation_variance",
+              "reference_value": 1388.469849,
+              "copy_value": 1573.520874,
+              "delta": 185.051025,
+              "percent_change": 13.33,
+              "expected_direction": "increase",
+              "meaning": "cepstral coefficients vary with modulation"
+            },
+            {
+              "feature": "delta_mfcc_std",
+              "reference_value": 2.588972,
+              "copy_value": 2.801587,
+              "delta": 0.212615,
+              "percent_change": 8.21,
+              "expected_direction": "increase",
+              "meaning": "tone colour shifts frame by frame"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.515548,
+              "copy_value": 1.632758,
+              "delta": 0.11721,
+              "percent_change": 7.73,
+              "expected_direction": "increase",
+              "meaning": "chorus/phaser continuously sweeps the spectrum"
+            },
+            {
+              "feature": "centroid_modulation_depth",
+              "reference_value": 0.445192,
+              "copy_value": 0.421756,
+              "delta": -0.023436,
+              "percent_change": -5.26,
+              "expected_direction": "increase",
+              "meaning": "brightness oscillates with LFO sweep"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.703948,
+              "copy_value": 0.674803,
+              "delta": -0.029145,
+              "percent_change": -4.14,
+              "expected_direction": "increase",
+              "meaning": "LFO adds amplitude wobble (core-gated)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Drive  25→75",
+      "axis": "drive",
+      "expected_dir": "+",
+      "status": "PASS",
+      "diagnosis": "방향 정확 ✓",
+      "ref_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\dist_25_solo_5.wav",
+      "copy_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\dist_75_solo_5.wav",
+      "note": "",
+      "target_axis": {
+        "axis": "drive",
+        "reference_amount": 50,
+        "copy_amount": 93,
+        "difference": 43,
+        "similarity": 0.57,
+        "action": "turn_off",
+        "message": "[드라이브] 원본에 비해 너무 과하게 걸려 있습니다. 끄거나 대폭 줄여주세요! 🔴",
+        "features": [
+          {
+            "feature": "rms",
+            "reference_value": 0.212682,
+            "copy_value": 0.428379,
+            "delta": 0.215697,
+            "percent_change": 101.42,
+            "expected_direction": "increase",
+            "meaning": "drive raises average signal energy"
+          },
+          {
+            "feature": "crest_factor",
+            "reference_value": 4.701857,
+            "copy_value": 2.334383,
+            "delta": -2.367474,
+            "percent_change": -50.35,
+            "expected_direction": "decrease",
+            "meaning": "clipping reduces peak-to-RMS ratio"
+          },
+          {
+            "feature": "spectral_bandwidth",
+            "reference_value": 0.094186,
+            "copy_value": 0.128691,
+            "delta": 0.034505,
+            "percent_change": 36.63,
+            "expected_direction": "increase",
+            "meaning": "harmonics widen the frequency spread"
+          },
+          {
+            "feature": "spectral_flatness",
+            "reference_value": 0.003172,
+            "copy_value": 0.003651,
+            "delta": 0.000479,
+            "percent_change": 15.1,
+            "expected_direction": "increase",
+            "meaning": "distortion makes the spectrum noise-like"
+          },
+          {
+            "feature": "autocorrelation",
+            "reference_value": 0.653159,
+            "copy_value": 0.588121,
+            "delta": -0.065038,
+            "percent_change": -9.96,
+            "expected_direction": "decrease",
+            "meaning": "distortion lowers waveform periodicity"
+          }
+        ]
+      },
+      "all_axes": [
+        {
+          "axis": "drive",
+          "reference_amount": 50,
+          "copy_amount": 93,
+          "difference": 43,
+          "similarity": 0.57,
+          "action": "turn_off",
+          "message": "[드라이브] 원본에 비해 너무 과하게 걸려 있습니다. 끄거나 대폭 줄여주세요! 🔴",
+          "features": [
+            {
+              "feature": "rms",
+              "reference_value": 0.212682,
+              "copy_value": 0.428379,
+              "delta": 0.215697,
+              "percent_change": 101.42,
+              "expected_direction": "increase",
+              "meaning": "drive raises average signal energy"
+            },
+            {
+              "feature": "crest_factor",
+              "reference_value": 4.701857,
+              "copy_value": 2.334383,
+              "delta": -2.367474,
+              "percent_change": -50.35,
+              "expected_direction": "decrease",
+              "meaning": "clipping reduces peak-to-RMS ratio"
+            },
+            {
+              "feature": "spectral_bandwidth",
+              "reference_value": 0.094186,
+              "copy_value": 0.128691,
+              "delta": 0.034505,
+              "percent_change": 36.63,
+              "expected_direction": "increase",
+              "meaning": "harmonics widen the frequency spread"
+            },
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.003172,
+              "copy_value": 0.003651,
+              "delta": 0.000479,
+              "percent_change": 15.1,
+              "expected_direction": "increase",
+              "meaning": "distortion makes the spectrum noise-like"
+            },
+            {
+              "feature": "autocorrelation",
+              "reference_value": 0.653159,
+              "copy_value": 0.588121,
+              "delta": -0.065038,
+              "percent_change": -9.96,
+              "expected_direction": "decrease",
+              "meaning": "distortion lowers waveform periodicity"
+            }
+          ]
+        },
+        {
+          "axis": "space",
+          "reference_amount": 50,
+          "copy_amount": 44,
+          "difference": -6,
+          "similarity": 0.94,
+          "action": "keep",
+          "message": "[공간계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "rms",
+              "reference_value": 0.212682,
+              "copy_value": 0.428379,
+              "delta": 0.215697,
+              "percent_change": 101.42,
+              "expected_direction": "increase",
+              "meaning": "reverb/delay tail raises average energy"
+            },
+            {
+              "feature": "energy_decay",
+              "reference_value": 1.980597,
+              "copy_value": 1.649881,
+              "delta": -0.330716,
+              "percent_change": -16.7,
+              "expected_direction": "increase",
+              "meaning": "space effects sustain energy in the tail"
+            },
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.003172,
+              "copy_value": 0.003651,
+              "delta": 0.000479,
+              "percent_change": 15.1,
+              "expected_direction": "decrease",
+              "meaning": "reverb tail levels out spectral peaks"
+            },
+            {
+              "feature": "spectral_flux_variance",
+              "reference_value": 2.883973,
+              "copy_value": 3.250504,
+              "delta": 0.366531,
+              "percent_change": 12.71,
+              "expected_direction": "decrease",
+              "meaning": "reverb/delay smooths spectral-change variance"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.674803,
+              "copy_value": 0.613917,
+              "delta": -0.060886,
+              "percent_change": -9.02,
+              "expected_direction": "increase",
+              "meaning": "echo repeats modulate the RMS envelope"
+            }
+          ]
+        },
+        {
+          "axis": "phase",
+          "reference_amount": 50,
+          "copy_amount": 50,
+          "difference": 0,
+          "similarity": 1.0,
+          "action": "keep",
+          "message": "[위상계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "mfcc_modulation_variance",
+              "reference_value": 1573.520874,
+              "copy_value": 1946.897949,
+              "delta": 373.377075,
+              "percent_change": 23.73,
+              "expected_direction": "increase",
+              "meaning": "cepstral coefficients vary with modulation"
+            },
+            {
+              "feature": "centroid_modulation_depth",
+              "reference_value": 0.421756,
+              "copy_value": 0.365278,
+              "delta": -0.056478,
+              "percent_change": -13.39,
+              "expected_direction": "increase",
+              "meaning": "brightness oscillates with LFO sweep"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.674803,
+              "copy_value": 0.613917,
+              "delta": -0.060886,
+              "percent_change": -9.02,
+              "expected_direction": "increase",
+              "meaning": "LFO adds amplitude wobble (core-gated)"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.632758,
+              "copy_value": 1.777541,
+              "delta": 0.144783,
+              "percent_change": 8.87,
+              "expected_direction": "increase",
+              "meaning": "chorus/phaser continuously sweeps the spectrum"
+            },
+            {
+              "feature": "delta_mfcc_std",
+              "reference_value": 2.801587,
+              "copy_value": 2.932447,
+              "delta": 0.13086,
+              "percent_change": 4.67,
+              "expected_direction": "increase",
+              "meaning": "tone colour shifts frame by frame"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Drive  75→25",
+      "axis": "drive",
+      "expected_dir": "-",
+      "status": "PASS",
+      "diagnosis": "방향 정확 ✓",
+      "ref_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\dist_75_solo_5.wav",
+      "copy_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\dist_25_solo_5.wav",
+      "note": "",
+      "target_axis": {
+        "axis": "drive",
+        "reference_amount": 50,
+        "copy_amount": 8,
+        "difference": -42,
+        "similarity": 0.58,
+        "action": "turn_on",
+        "message": "[드라이브] 원본에 비해 너무 약하거나 꺼져 있습니다. 켜주세요! 🟢",
+        "features": [
+          {
+            "feature": "crest_factor",
+            "reference_value": 2.334383,
+            "copy_value": 4.701857,
+            "delta": 2.367474,
+            "percent_change": 101.42,
+            "expected_direction": "decrease",
+            "meaning": "clipping reduces peak-to-RMS ratio"
+          },
+          {
+            "feature": "rms",
+            "reference_value": 0.428379,
+            "copy_value": 0.212682,
+            "delta": -0.215697,
+            "percent_change": -50.35,
+            "expected_direction": "increase",
+            "meaning": "drive raises average signal energy"
+          },
+          {
+            "feature": "spectral_bandwidth",
+            "reference_value": 0.128691,
+            "copy_value": 0.094186,
+            "delta": -0.034505,
+            "percent_change": -26.81,
+            "expected_direction": "increase",
+            "meaning": "harmonics widen the frequency spread"
+          },
+          {
+            "feature": "spectral_flatness",
+            "reference_value": 0.003651,
+            "copy_value": 0.003172,
+            "delta": -0.000479,
+            "percent_change": -13.12,
+            "expected_direction": "increase",
+            "meaning": "distortion makes the spectrum noise-like"
+          },
+          {
+            "feature": "autocorrelation",
+            "reference_value": 0.588121,
+            "copy_value": 0.653159,
+            "delta": 0.065038,
+            "percent_change": 11.06,
+            "expected_direction": "decrease",
+            "meaning": "distortion lowers waveform periodicity"
+          }
+        ]
+      },
+      "all_axes": [
+        {
+          "axis": "drive",
+          "reference_amount": 50,
+          "copy_amount": 8,
+          "difference": -42,
+          "similarity": 0.58,
+          "action": "turn_on",
+          "message": "[드라이브] 원본에 비해 너무 약하거나 꺼져 있습니다. 켜주세요! 🟢",
+          "features": [
+            {
+              "feature": "crest_factor",
+              "reference_value": 2.334383,
+              "copy_value": 4.701857,
+              "delta": 2.367474,
+              "percent_change": 101.42,
+              "expected_direction": "decrease",
+              "meaning": "clipping reduces peak-to-RMS ratio"
+            },
+            {
+              "feature": "rms",
+              "reference_value": 0.428379,
+              "copy_value": 0.212682,
+              "delta": -0.215697,
+              "percent_change": -50.35,
+              "expected_direction": "increase",
+              "meaning": "drive raises average signal energy"
+            },
+            {
+              "feature": "spectral_bandwidth",
+              "reference_value": 0.128691,
+              "copy_value": 0.094186,
+              "delta": -0.034505,
+              "percent_change": -26.81,
+              "expected_direction": "increase",
+              "meaning": "harmonics widen the frequency spread"
+            },
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.003651,
+              "copy_value": 0.003172,
+              "delta": -0.000479,
+              "percent_change": -13.12,
+              "expected_direction": "increase",
+              "meaning": "distortion makes the spectrum noise-like"
+            },
+            {
+              "feature": "autocorrelation",
+              "reference_value": 0.588121,
+              "copy_value": 0.653159,
+              "delta": 0.065038,
+              "percent_change": 11.06,
+              "expected_direction": "decrease",
+              "meaning": "distortion lowers waveform periodicity"
+            }
+          ]
+        },
+        {
+          "axis": "space",
+          "reference_amount": 50,
+          "copy_amount": 59,
+          "difference": 9,
+          "similarity": 0.91,
+          "action": "keep",
+          "message": "[공간계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "rms",
+              "reference_value": 0.428379,
+              "copy_value": 0.212682,
+              "delta": -0.215697,
+              "percent_change": -50.35,
+              "expected_direction": "increase",
+              "meaning": "reverb/delay tail raises average energy"
+            },
+            {
+              "feature": "energy_decay",
+              "reference_value": 1.649881,
+              "copy_value": 1.980597,
+              "delta": 0.330716,
+              "percent_change": 20.04,
+              "expected_direction": "increase",
+              "meaning": "space effects sustain energy in the tail"
+            },
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.003651,
+              "copy_value": 0.003172,
+              "delta": -0.000479,
+              "percent_change": -13.12,
+              "expected_direction": "decrease",
+              "meaning": "reverb tail levels out spectral peaks"
+            },
+            {
+              "feature": "spectral_flux_variance",
+              "reference_value": 3.250504,
+              "copy_value": 2.883973,
+              "delta": -0.366531,
+              "percent_change": -11.28,
+              "expected_direction": "decrease",
+              "meaning": "reverb/delay smooths spectral-change variance"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.613917,
+              "copy_value": 0.674803,
+              "delta": 0.060886,
+              "percent_change": 9.92,
+              "expected_direction": "increase",
+              "meaning": "echo repeats modulate the RMS envelope"
+            }
+          ]
+        },
+        {
+          "axis": "phase",
+          "reference_amount": 50,
+          "copy_amount": 50,
+          "difference": 0,
+          "similarity": 1.0,
+          "action": "keep",
+          "message": "[위상계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "mfcc_modulation_variance",
+              "reference_value": 1946.897949,
+              "copy_value": 1573.520874,
+              "delta": -373.377075,
+              "percent_change": -19.18,
+              "expected_direction": "increase",
+              "meaning": "cepstral coefficients vary with modulation"
+            },
+            {
+              "feature": "centroid_modulation_depth",
+              "reference_value": 0.365278,
+              "copy_value": 0.421756,
+              "delta": 0.056478,
+              "percent_change": 15.46,
+              "expected_direction": "increase",
+              "meaning": "brightness oscillates with LFO sweep"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.613917,
+              "copy_value": 0.674803,
+              "delta": 0.060886,
+              "percent_change": 9.92,
+              "expected_direction": "increase",
+              "meaning": "LFO adds amplitude wobble (core-gated)"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.777541,
+              "copy_value": 1.632758,
+              "delta": -0.144783,
+              "percent_change": -8.15,
+              "expected_direction": "increase",
+              "meaning": "chorus/phaser continuously sweeps the spectrum"
+            },
+            {
+              "feature": "delta_mfcc_std",
+              "reference_value": 2.932447,
+              "copy_value": 2.801587,
+              "delta": -0.13086,
+              "percent_change": -4.46,
+              "expected_direction": "increase",
+              "meaning": "tone colour shifts frame by frame"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Drive  50→0",
+      "axis": "drive",
+      "expected_dir": "-",
+      "status": "PASS",
+      "diagnosis": "방향 정확 ✓",
+      "ref_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\dist_50_solo_5.wav",
+      "copy_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\clean_solo_5.wav",
+      "note": "",
+      "target_axis": {
+        "axis": "drive",
+        "reference_amount": 50,
+        "copy_amount": 17,
+        "difference": -33,
+        "similarity": 0.67,
+        "action": "turn_on",
+        "message": "[드라이브] 원본에 비해 너무 약하거나 꺼져 있습니다. 켜주세요! 🟢",
+        "features": [
+          {
+            "feature": "crest_factor",
+            "reference_value": 3.020579,
+            "copy_value": 7.976018,
+            "delta": 4.955438,
+            "percent_change": 164.06,
+            "expected_direction": "decrease",
+            "meaning": "clipping reduces peak-to-RMS ratio"
+          },
+          {
+            "feature": "rms",
+            "reference_value": 0.331062,
+            "copy_value": 0.125376,
+            "delta": -0.205686,
+            "percent_change": -62.13,
+            "expected_direction": "increase",
+            "meaning": "drive raises average signal energy"
+          },
+          {
+            "feature": "spectral_bandwidth",
+            "reference_value": 0.109248,
+            "copy_value": 0.085893,
+            "delta": -0.023355,
+            "percent_change": -21.38,
+            "expected_direction": "increase",
+            "meaning": "harmonics widen the frequency spread"
+          },
+          {
+            "feature": "amplitude_modulation",
+            "reference_value": 0.642737,
+            "copy_value": 0.703948,
+            "delta": 0.061211,
+            "percent_change": 9.52,
+            "expected_direction": "increase",
+            "meaning": "distortion raises RMS envelope variation"
+          },
+          {
+            "feature": "autocorrelation",
+            "reference_value": 0.633901,
+            "copy_value": 0.654483,
+            "delta": 0.020582,
+            "percent_change": 3.25,
+            "expected_direction": "decrease",
+            "meaning": "distortion lowers waveform periodicity"
+          }
+        ]
+      },
+      "all_axes": [
+        {
+          "axis": "drive",
+          "reference_amount": 50,
+          "copy_amount": 17,
+          "difference": -33,
+          "similarity": 0.67,
+          "action": "turn_on",
+          "message": "[드라이브] 원본에 비해 너무 약하거나 꺼져 있습니다. 켜주세요! 🟢",
+          "features": [
+            {
+              "feature": "crest_factor",
+              "reference_value": 3.020579,
+              "copy_value": 7.976018,
+              "delta": 4.955438,
+              "percent_change": 164.06,
+              "expected_direction": "decrease",
+              "meaning": "clipping reduces peak-to-RMS ratio"
+            },
+            {
+              "feature": "rms",
+              "reference_value": 0.331062,
+              "copy_value": 0.125376,
+              "delta": -0.205686,
+              "percent_change": -62.13,
+              "expected_direction": "increase",
+              "meaning": "drive raises average signal energy"
+            },
+            {
+              "feature": "spectral_bandwidth",
+              "reference_value": 0.109248,
+              "copy_value": 0.085893,
+              "delta": -0.023355,
+              "percent_change": -21.38,
+              "expected_direction": "increase",
+              "meaning": "harmonics widen the frequency spread"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.642737,
+              "copy_value": 0.703948,
+              "delta": 0.061211,
+              "percent_change": 9.52,
+              "expected_direction": "increase",
+              "meaning": "distortion raises RMS envelope variation"
+            },
+            {
+              "feature": "autocorrelation",
+              "reference_value": 0.633901,
+              "copy_value": 0.654483,
+              "delta": 0.020582,
+              "percent_change": 3.25,
+              "expected_direction": "decrease",
+              "meaning": "distortion lowers waveform periodicity"
+            }
+          ]
+        },
+        {
+          "axis": "space",
+          "reference_amount": 50,
+          "copy_amount": 59,
+          "difference": 9,
+          "similarity": 0.91,
+          "action": "keep",
+          "message": "[공간계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "rms",
+              "reference_value": 0.331062,
+              "copy_value": 0.125376,
+              "delta": -0.205686,
+              "percent_change": -62.13,
+              "expected_direction": "increase",
+              "meaning": "reverb/delay tail raises average energy"
+            },
+            {
+              "feature": "energy_decay",
+              "reference_value": 1.787729,
+              "copy_value": 2.138731,
+              "delta": 0.351001,
+              "percent_change": 19.63,
+              "expected_direction": "increase",
+              "meaning": "space effects sustain energy in the tail"
+            },
+            {
+              "feature": "spectral_flux_variance",
+              "reference_value": 3.110482,
+              "copy_value": 2.600621,
+              "delta": -0.50986,
+              "percent_change": -16.39,
+              "expected_direction": "decrease",
+              "meaning": "reverb/delay smooths spectral-change variance"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.719081,
+              "copy_value": 1.515548,
+              "delta": -0.203533,
+              "percent_change": -11.84,
+              "expected_direction": "decrease",
+              "meaning": "space effects reduce abrupt spectral change"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.642737,
+              "copy_value": 0.703948,
+              "delta": 0.061211,
+              "percent_change": 9.52,
+              "expected_direction": "increase",
+              "meaning": "echo repeats modulate the RMS envelope"
+            }
+          ]
+        },
+        {
+          "axis": "phase",
+          "reference_amount": 50,
+          "copy_amount": 50,
+          "difference": 0,
+          "similarity": 1.0,
+          "action": "keep",
+          "message": "[위상계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "mfcc_modulation_variance",
+              "reference_value": 1779.484619,
+              "copy_value": 1388.469849,
+              "delta": -391.014771,
+              "percent_change": -21.97,
+              "expected_direction": "increase",
+              "meaning": "cepstral coefficients vary with modulation"
+            },
+            {
+              "feature": "centroid_modulation_depth",
+              "reference_value": 0.38891,
+              "copy_value": 0.445192,
+              "delta": 0.056282,
+              "percent_change": 14.47,
+              "expected_direction": "increase",
+              "meaning": "brightness oscillates with LFO sweep"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.719081,
+              "copy_value": 1.515548,
+              "delta": -0.203533,
+              "percent_change": -11.84,
+              "expected_direction": "increase",
+              "meaning": "chorus/phaser continuously sweeps the spectrum"
+            },
+            {
+              "feature": "delta_mfcc_std",
+              "reference_value": 2.911123,
+              "copy_value": 2.588972,
+              "delta": -0.322151,
+              "percent_change": -11.07,
+              "expected_direction": "increase",
+              "meaning": "tone colour shifts frame by frame"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.642737,
+              "copy_value": 0.703948,
+              "delta": 0.061211,
+              "percent_change": 9.52,
+              "expected_direction": "increase",
+              "meaning": "LFO adds amplitude wobble (core-gated)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Space   0→30",
+      "axis": "space",
+      "expected_dir": "+",
+      "status": "PASS",
+      "diagnosis": "방향 정확 ✓",
+      "ref_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\clean_solo_5.wav",
+      "copy_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\reverb_25_solo_5.wav",
+      "note": "30≈reverb_25",
+      "target_axis": {
+        "axis": "space",
+        "reference_amount": 50,
+        "copy_amount": 81,
+        "difference": 31,
+        "similarity": 0.69,
+        "action": "turn_off",
+        "message": "[공간계] 원본에 비해 너무 과하게 걸려 있습니다. 끄거나 대폭 줄여주세요! 🔴",
+        "features": [
+          {
+            "feature": "spectral_flux_variance",
+            "reference_value": 2.600621,
+            "copy_value": 0.585105,
+            "delta": -2.015516,
+            "percent_change": -77.5,
+            "expected_direction": "decrease",
+            "meaning": "reverb/delay smooths spectral-change variance"
+          },
+          {
+            "feature": "spectral_flatness",
+            "reference_value": 0.003276,
+            "copy_value": 0.001377,
+            "delta": -0.001899,
+            "percent_change": -57.97,
+            "expected_direction": "decrease",
+            "meaning": "reverb tail levels out spectral peaks"
+          },
+          {
+            "feature": "spectral_flux",
+            "reference_value": 1.515548,
+            "copy_value": 1.094474,
+            "delta": -0.421075,
+            "percent_change": -27.78,
+            "expected_direction": "decrease",
+            "meaning": "space effects reduce abrupt spectral change"
+          },
+          {
+            "feature": "amplitude_modulation",
+            "reference_value": 0.703948,
+            "copy_value": 0.530957,
+            "delta": -0.172991,
+            "percent_change": -24.57,
+            "expected_direction": "increase",
+            "meaning": "echo repeats modulate the RMS envelope"
+          },
+          {
+            "feature": "energy_decay",
+            "reference_value": 2.138731,
+            "copy_value": 1.799334,
+            "delta": -0.339397,
+            "percent_change": -15.87,
+            "expected_direction": "increase",
+            "meaning": "space effects sustain energy in the tail"
+          }
+        ]
+      },
+      "all_axes": [
+        {
+          "axis": "drive",
+          "reference_amount": 50,
+          "copy_amount": 50,
+          "difference": 0,
+          "similarity": 1.0,
+          "action": "keep",
+          "message": "[드라이브] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.003276,
+              "copy_value": 0.001377,
+              "delta": -0.001899,
+              "percent_change": -57.97,
+              "expected_direction": "increase",
+              "meaning": "distortion makes the spectrum noise-like"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.703948,
+              "copy_value": 0.530957,
+              "delta": -0.172991,
+              "percent_change": -24.57,
+              "expected_direction": "increase",
+              "meaning": "distortion raises RMS envelope variation"
+            },
+            {
+              "feature": "rms",
+              "reference_value": 0.125376,
+              "copy_value": 0.143546,
+              "delta": 0.01817,
+              "percent_change": 14.49,
+              "expected_direction": "increase",
+              "meaning": "drive raises average signal energy"
+            },
+            {
+              "feature": "crest_factor",
+              "reference_value": 7.976018,
+              "copy_value": 6.966407,
+              "delta": -1.009611,
+              "percent_change": -12.66,
+              "expected_direction": "decrease",
+              "meaning": "clipping reduces peak-to-RMS ratio"
+            },
+            {
+              "feature": "spectral_bandwidth",
+              "reference_value": 0.085893,
+              "copy_value": 0.077077,
+              "delta": -0.008816,
+              "percent_change": -10.26,
+              "expected_direction": "increase",
+              "meaning": "harmonics widen the frequency spread"
+            }
+          ]
+        },
+        {
+          "axis": "space",
+          "reference_amount": 50,
+          "copy_amount": 81,
+          "difference": 31,
+          "similarity": 0.69,
+          "action": "turn_off",
+          "message": "[공간계] 원본에 비해 너무 과하게 걸려 있습니다. 끄거나 대폭 줄여주세요! 🔴",
+          "features": [
+            {
+              "feature": "spectral_flux_variance",
+              "reference_value": 2.600621,
+              "copy_value": 0.585105,
+              "delta": -2.015516,
+              "percent_change": -77.5,
+              "expected_direction": "decrease",
+              "meaning": "reverb/delay smooths spectral-change variance"
+            },
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.003276,
+              "copy_value": 0.001377,
+              "delta": -0.001899,
+              "percent_change": -57.97,
+              "expected_direction": "decrease",
+              "meaning": "reverb tail levels out spectral peaks"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.515548,
+              "copy_value": 1.094474,
+              "delta": -0.421075,
+              "percent_change": -27.78,
+              "expected_direction": "decrease",
+              "meaning": "space effects reduce abrupt spectral change"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.703948,
+              "copy_value": 0.530957,
+              "delta": -0.172991,
+              "percent_change": -24.57,
+              "expected_direction": "increase",
+              "meaning": "echo repeats modulate the RMS envelope"
+            },
+            {
+              "feature": "energy_decay",
+              "reference_value": 2.138731,
+              "copy_value": 1.799334,
+              "delta": -0.339397,
+              "percent_change": -15.87,
+              "expected_direction": "increase",
+              "meaning": "space effects sustain energy in the tail"
+            }
+          ]
+        },
+        {
+          "axis": "phase",
+          "reference_amount": 50,
+          "copy_amount": 46,
+          "difference": -4,
+          "similarity": 0.96,
+          "action": "keep",
+          "message": "[위상계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "delta_mfcc_std",
+              "reference_value": 2.588972,
+              "copy_value": 1.50371,
+              "delta": -1.085262,
+              "percent_change": -41.92,
+              "expected_direction": "increase",
+              "meaning": "tone colour shifts frame by frame"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.515548,
+              "copy_value": 1.094474,
+              "delta": -0.421075,
+              "percent_change": -27.78,
+              "expected_direction": "increase",
+              "meaning": "chorus/phaser continuously sweeps the spectrum"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.703948,
+              "copy_value": 0.530957,
+              "delta": -0.172991,
+              "percent_change": -24.57,
+              "expected_direction": "increase",
+              "meaning": "LFO adds amplitude wobble (core-gated)"
+            },
+            {
+              "feature": "mfcc_modulation_variance",
+              "reference_value": 1388.469849,
+              "copy_value": 1104.033325,
+              "delta": -284.436523,
+              "percent_change": -20.49,
+              "expected_direction": "increase",
+              "meaning": "cepstral coefficients vary with modulation"
+            },
+            {
+              "feature": "centroid_modulation_depth",
+              "reference_value": 0.445192,
+              "copy_value": 0.391341,
+              "delta": -0.053851,
+              "percent_change": -12.1,
+              "expected_direction": "increase",
+              "meaning": "brightness oscillates with LFO sweep"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Space  30→100",
+      "axis": "space",
+      "expected_dir": "+",
+      "status": "PASS",
+      "diagnosis": "방향 정확 ✓",
+      "ref_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\reverb_25_solo_5.wav",
+      "copy_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\reverb_100_solo_5.wav",
+      "note": "30≈reverb_25",
+      "target_axis": {
+        "axis": "space",
+        "reference_amount": 50,
+        "copy_amount": 89,
+        "difference": 39,
+        "similarity": 0.61,
+        "action": "turn_off",
+        "message": "[공간계] 원본에 비해 너무 과하게 걸려 있습니다. 끄거나 대폭 줄여주세요! 🔴",
+        "features": [
+          {
+            "feature": "spectral_flux_variance",
+            "reference_value": 0.585105,
+            "copy_value": 0.223818,
+            "delta": -0.361287,
+            "percent_change": -61.75,
+            "expected_direction": "decrease",
+            "meaning": "reverb/delay smooths spectral-change variance"
+          },
+          {
+            "feature": "spectral_flatness",
+            "reference_value": 0.001377,
+            "copy_value": 0.000762,
+            "delta": -0.000614,
+            "percent_change": -44.63,
+            "expected_direction": "decrease",
+            "meaning": "reverb tail levels out spectral peaks"
+          },
+          {
+            "feature": "rms",
+            "reference_value": 0.143546,
+            "copy_value": 0.187889,
+            "delta": 0.044343,
+            "percent_change": 30.89,
+            "expected_direction": "increase",
+            "meaning": "reverb/delay tail raises average energy"
+          },
+          {
+            "feature": "amplitude_modulation",
+            "reference_value": 0.530957,
+            "copy_value": 0.368285,
+            "delta": -0.162672,
+            "percent_change": -30.64,
+            "expected_direction": "increase",
+            "meaning": "echo repeats modulate the RMS envelope"
+          },
+          {
+            "feature": "sustain_ratio",
+            "reference_value": 0.767888,
+            "copy_value": 0.894804,
+            "delta": 0.126917,
+            "percent_change": 16.53,
+            "expected_direction": "increase",
+            "meaning": "reverb extends the voiced portion of the signal"
+          }
+        ]
+      },
+      "all_axes": [
+        {
+          "axis": "drive",
+          "reference_amount": 50,
+          "copy_amount": 50,
+          "difference": 0,
+          "similarity": 1.0,
+          "action": "keep",
+          "message": "[드라이브] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.001377,
+              "copy_value": 0.000762,
+              "delta": -0.000614,
+              "percent_change": -44.63,
+              "expected_direction": "increase",
+              "meaning": "distortion makes the spectrum noise-like"
+            },
+            {
+              "feature": "rms",
+              "reference_value": 0.143546,
+              "copy_value": 0.187889,
+              "delta": 0.044343,
+              "percent_change": 30.89,
+              "expected_direction": "increase",
+              "meaning": "drive raises average signal energy"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.530957,
+              "copy_value": 0.368285,
+              "delta": -0.162672,
+              "percent_change": -30.64,
+              "expected_direction": "increase",
+              "meaning": "distortion raises RMS envelope variation"
+            },
+            {
+              "feature": "crest_factor",
+              "reference_value": 6.966407,
+              "copy_value": 5.322283,
+              "delta": -1.644123,
+              "percent_change": -23.6,
+              "expected_direction": "decrease",
+              "meaning": "clipping reduces peak-to-RMS ratio"
+            },
+            {
+              "feature": "spectral_bandwidth",
+              "reference_value": 0.077077,
+              "copy_value": 0.063129,
+              "delta": -0.013948,
+              "percent_change": -18.1,
+              "expected_direction": "increase",
+              "meaning": "harmonics widen the frequency spread"
+            }
+          ]
+        },
+        {
+          "axis": "space",
+          "reference_amount": 50,
+          "copy_amount": 89,
+          "difference": 39,
+          "similarity": 0.61,
+          "action": "turn_off",
+          "message": "[공간계] 원본에 비해 너무 과하게 걸려 있습니다. 끄거나 대폭 줄여주세요! 🔴",
+          "features": [
+            {
+              "feature": "spectral_flux_variance",
+              "reference_value": 0.585105,
+              "copy_value": 0.223818,
+              "delta": -0.361287,
+              "percent_change": -61.75,
+              "expected_direction": "decrease",
+              "meaning": "reverb/delay smooths spectral-change variance"
+            },
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.001377,
+              "copy_value": 0.000762,
+              "delta": -0.000614,
+              "percent_change": -44.63,
+              "expected_direction": "decrease",
+              "meaning": "reverb tail levels out spectral peaks"
+            },
+            {
+              "feature": "rms",
+              "reference_value": 0.143546,
+              "copy_value": 0.187889,
+              "delta": 0.044343,
+              "percent_change": 30.89,
+              "expected_direction": "increase",
+              "meaning": "reverb/delay tail raises average energy"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.530957,
+              "copy_value": 0.368285,
+              "delta": -0.162672,
+              "percent_change": -30.64,
+              "expected_direction": "increase",
+              "meaning": "echo repeats modulate the RMS envelope"
+            },
+            {
+              "feature": "sustain_ratio",
+              "reference_value": 0.767888,
+              "copy_value": 0.894804,
+              "delta": 0.126917,
+              "percent_change": 16.53,
+              "expected_direction": "increase",
+              "meaning": "reverb extends the voiced portion of the signal"
+            }
+          ]
+        },
+        {
+          "axis": "phase",
+          "reference_amount": 50,
+          "copy_amount": 50,
+          "difference": 0,
+          "similarity": 1.0,
+          "action": "keep",
+          "message": "[위상계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.530957,
+              "copy_value": 0.368285,
+              "delta": -0.162672,
+              "percent_change": -30.64,
+              "expected_direction": "increase",
+              "meaning": "LFO adds amplitude wobble (core-gated)"
+            },
+            {
+              "feature": "delta_mfcc_std",
+              "reference_value": 1.50371,
+              "copy_value": 1.128277,
+              "delta": -0.375433,
+              "percent_change": -24.97,
+              "expected_direction": "increase",
+              "meaning": "tone colour shifts frame by frame"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.094474,
+              "copy_value": 0.922824,
+              "delta": -0.17165,
+              "percent_change": -15.68,
+              "expected_direction": "increase",
+              "meaning": "chorus/phaser continuously sweeps the spectrum"
+            },
+            {
+              "feature": "modulation_energy",
+              "reference_value": 0.663569,
+              "copy_value": 0.56787,
+              "delta": -0.095699,
+              "percent_change": -14.42,
+              "expected_direction": "increase",
+              "meaning": "LFO creates RMS energy in 0.3–8 Hz band"
+            },
+            {
+              "feature": "mfcc_modulation_variance",
+              "reference_value": 1104.033325,
+              "copy_value": 1002.73053,
+              "delta": -101.302795,
+              "percent_change": -9.18,
+              "expected_direction": "increase",
+              "meaning": "cepstral coefficients vary with modulation"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Space 100→30",
+      "axis": "space",
+      "expected_dir": "-",
+      "status": "PASS",
+      "diagnosis": "방향 정확 ✓",
+      "ref_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\reverb_100_solo_5.wav",
+      "copy_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\reverb_25_solo_5.wav",
+      "note": "30≈reverb_25",
+      "target_axis": {
+        "axis": "space",
+        "reference_amount": 50,
+        "copy_amount": 7,
+        "difference": -43,
+        "similarity": 0.57,
+        "action": "turn_on",
+        "message": "[공간계] 원본에 비해 너무 약하거나 꺼져 있습니다. 켜주세요! 🟢",
+        "features": [
+          {
+            "feature": "spectral_flux_variance",
+            "reference_value": 0.223818,
+            "copy_value": 0.585105,
+            "delta": 0.361287,
+            "percent_change": 161.42,
+            "expected_direction": "decrease",
+            "meaning": "reverb/delay smooths spectral-change variance"
+          },
+          {
+            "feature": "spectral_flatness",
+            "reference_value": 0.000762,
+            "copy_value": 0.001377,
+            "delta": 0.000614,
+            "percent_change": 80.6,
+            "expected_direction": "decrease",
+            "meaning": "reverb tail levels out spectral peaks"
+          },
+          {
+            "feature": "amplitude_modulation",
+            "reference_value": 0.368285,
+            "copy_value": 0.530957,
+            "delta": 0.162672,
+            "percent_change": 44.17,
+            "expected_direction": "increase",
+            "meaning": "echo repeats modulate the RMS envelope"
+          },
+          {
+            "feature": "rms",
+            "reference_value": 0.187889,
+            "copy_value": 0.143546,
+            "delta": -0.044343,
+            "percent_change": -23.6,
+            "expected_direction": "increase",
+            "meaning": "reverb/delay tail raises average energy"
+          },
+          {
+            "feature": "spectral_flux",
+            "reference_value": 0.922824,
+            "copy_value": 1.094474,
+            "delta": 0.17165,
+            "percent_change": 18.6,
+            "expected_direction": "decrease",
+            "meaning": "space effects reduce abrupt spectral change"
+          }
+        ]
+      },
+      "all_axes": [
+        {
+          "axis": "drive",
+          "reference_amount": 50,
+          "copy_amount": 50,
+          "difference": 0,
+          "similarity": 1.0,
+          "action": "keep",
+          "message": "[드라이브] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.000762,
+              "copy_value": 0.001377,
+              "delta": 0.000614,
+              "percent_change": 80.6,
+              "expected_direction": "increase",
+              "meaning": "distortion makes the spectrum noise-like"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.368285,
+              "copy_value": 0.530957,
+              "delta": 0.162672,
+              "percent_change": 44.17,
+              "expected_direction": "increase",
+              "meaning": "distortion raises RMS envelope variation"
+            },
+            {
+              "feature": "crest_factor",
+              "reference_value": 5.322283,
+              "copy_value": 6.966407,
+              "delta": 1.644123,
+              "percent_change": 30.89,
+              "expected_direction": "decrease",
+              "meaning": "clipping reduces peak-to-RMS ratio"
+            },
+            {
+              "feature": "rms",
+              "reference_value": 0.187889,
+              "copy_value": 0.143546,
+              "delta": -0.044343,
+              "percent_change": -23.6,
+              "expected_direction": "increase",
+              "meaning": "drive raises average signal energy"
+            },
+            {
+              "feature": "spectral_bandwidth",
+              "reference_value": 0.063129,
+              "copy_value": 0.077077,
+              "delta": 0.013948,
+              "percent_change": 22.09,
+              "expected_direction": "increase",
+              "meaning": "harmonics widen the frequency spread"
+            }
+          ]
+        },
+        {
+          "axis": "space",
+          "reference_amount": 50,
+          "copy_amount": 7,
+          "difference": -43,
+          "similarity": 0.57,
+          "action": "turn_on",
+          "message": "[공간계] 원본에 비해 너무 약하거나 꺼져 있습니다. 켜주세요! 🟢",
+          "features": [
+            {
+              "feature": "spectral_flux_variance",
+              "reference_value": 0.223818,
+              "copy_value": 0.585105,
+              "delta": 0.361287,
+              "percent_change": 161.42,
+              "expected_direction": "decrease",
+              "meaning": "reverb/delay smooths spectral-change variance"
+            },
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.000762,
+              "copy_value": 0.001377,
+              "delta": 0.000614,
+              "percent_change": 80.6,
+              "expected_direction": "decrease",
+              "meaning": "reverb tail levels out spectral peaks"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.368285,
+              "copy_value": 0.530957,
+              "delta": 0.162672,
+              "percent_change": 44.17,
+              "expected_direction": "increase",
+              "meaning": "echo repeats modulate the RMS envelope"
+            },
+            {
+              "feature": "rms",
+              "reference_value": 0.187889,
+              "copy_value": 0.143546,
+              "delta": -0.044343,
+              "percent_change": -23.6,
+              "expected_direction": "increase",
+              "meaning": "reverb/delay tail raises average energy"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 0.922824,
+              "copy_value": 1.094474,
+              "delta": 0.17165,
+              "percent_change": 18.6,
+              "expected_direction": "decrease",
+              "meaning": "space effects reduce abrupt spectral change"
+            }
+          ]
+        },
+        {
+          "axis": "phase",
+          "reference_amount": 50,
+          "copy_amount": 50,
+          "difference": 0,
+          "similarity": 1.0,
+          "action": "keep",
+          "message": "[위상계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.368285,
+              "copy_value": 0.530957,
+              "delta": 0.162672,
+              "percent_change": 44.17,
+              "expected_direction": "increase",
+              "meaning": "LFO adds amplitude wobble (core-gated)"
+            },
+            {
+              "feature": "delta_mfcc_std",
+              "reference_value": 1.128277,
+              "copy_value": 1.50371,
+              "delta": 0.375433,
+              "percent_change": 33.27,
+              "expected_direction": "increase",
+              "meaning": "tone colour shifts frame by frame"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 0.922824,
+              "copy_value": 1.094474,
+              "delta": 0.17165,
+              "percent_change": 18.6,
+              "expected_direction": "increase",
+              "meaning": "chorus/phaser continuously sweeps the spectrum"
+            },
+            {
+              "feature": "modulation_energy",
+              "reference_value": 0.56787,
+              "copy_value": 0.663569,
+              "delta": 0.095699,
+              "percent_change": 16.85,
+              "expected_direction": "increase",
+              "meaning": "LFO creates RMS energy in 0.3–8 Hz band"
+            },
+            {
+              "feature": "mfcc_modulation_variance",
+              "reference_value": 1002.73053,
+              "copy_value": 1104.033325,
+              "delta": 101.302795,
+              "percent_change": 10.1,
+              "expected_direction": "increase",
+              "meaning": "cepstral coefficients vary with modulation"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Space  30→0",
+      "axis": "space",
+      "expected_dir": "-",
+      "status": "PASS",
+      "diagnosis": "방향 정확 ✓",
+      "ref_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\reverb_25_solo_5.wav",
+      "copy_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\clean_solo_5.wav",
+      "note": "30≈reverb_25",
+      "target_axis": {
+        "axis": "space",
+        "reference_amount": 50,
+        "copy_amount": 24,
+        "difference": -26,
+        "similarity": 0.74,
+        "action": "raise",
+        "message": "[공간계] 원본보다 약합니다. 강도를 더 올려주세요. 🔼",
+        "features": [
+          {
+            "feature": "spectral_flux_variance",
+            "reference_value": 0.585105,
+            "copy_value": 2.600621,
+            "delta": 2.015516,
+            "percent_change": 344.47,
+            "expected_direction": "decrease",
+            "meaning": "reverb/delay smooths spectral-change variance"
+          },
+          {
+            "feature": "spectral_flatness",
+            "reference_value": 0.001377,
+            "copy_value": 0.003276,
+            "delta": 0.001899,
+            "percent_change": 137.95,
+            "expected_direction": "decrease",
+            "meaning": "reverb tail levels out spectral peaks"
+          },
+          {
+            "feature": "spectral_flux",
+            "reference_value": 1.094474,
+            "copy_value": 1.515548,
+            "delta": 0.421075,
+            "percent_change": 38.47,
+            "expected_direction": "decrease",
+            "meaning": "space effects reduce abrupt spectral change"
+          },
+          {
+            "feature": "amplitude_modulation",
+            "reference_value": 0.530957,
+            "copy_value": 0.703948,
+            "delta": 0.172991,
+            "percent_change": 32.58,
+            "expected_direction": "increase",
+            "meaning": "echo repeats modulate the RMS envelope"
+          },
+          {
+            "feature": "energy_decay",
+            "reference_value": 1.799334,
+            "copy_value": 2.138731,
+            "delta": 0.339397,
+            "percent_change": 18.86,
+            "expected_direction": "increase",
+            "meaning": "space effects sustain energy in the tail"
+          }
+        ]
+      },
+      "all_axes": [
+        {
+          "axis": "drive",
+          "reference_amount": 50,
+          "copy_amount": 50,
+          "difference": 0,
+          "similarity": 1.0,
+          "action": "keep",
+          "message": "[드라이브] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.001377,
+              "copy_value": 0.003276,
+              "delta": 0.001899,
+              "percent_change": 137.95,
+              "expected_direction": "increase",
+              "meaning": "distortion makes the spectrum noise-like"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.530957,
+              "copy_value": 0.703948,
+              "delta": 0.172991,
+              "percent_change": 32.58,
+              "expected_direction": "increase",
+              "meaning": "distortion raises RMS envelope variation"
+            },
+            {
+              "feature": "crest_factor",
+              "reference_value": 6.966407,
+              "copy_value": 7.976018,
+              "delta": 1.009611,
+              "percent_change": 14.49,
+              "expected_direction": "decrease",
+              "meaning": "clipping reduces peak-to-RMS ratio"
+            },
+            {
+              "feature": "rms",
+              "reference_value": 0.143546,
+              "copy_value": 0.125376,
+              "delta": -0.01817,
+              "percent_change": -12.66,
+              "expected_direction": "increase",
+              "meaning": "drive raises average signal energy"
+            },
+            {
+              "feature": "spectral_bandwidth",
+              "reference_value": 0.077077,
+              "copy_value": 0.085893,
+              "delta": 0.008816,
+              "percent_change": 11.44,
+              "expected_direction": "increase",
+              "meaning": "harmonics widen the frequency spread"
+            }
+          ]
+        },
+        {
+          "axis": "space",
+          "reference_amount": 50,
+          "copy_amount": 24,
+          "difference": -26,
+          "similarity": 0.74,
+          "action": "raise",
+          "message": "[공간계] 원본보다 약합니다. 강도를 더 올려주세요. 🔼",
+          "features": [
+            {
+              "feature": "spectral_flux_variance",
+              "reference_value": 0.585105,
+              "copy_value": 2.600621,
+              "delta": 2.015516,
+              "percent_change": 344.47,
+              "expected_direction": "decrease",
+              "meaning": "reverb/delay smooths spectral-change variance"
+            },
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.001377,
+              "copy_value": 0.003276,
+              "delta": 0.001899,
+              "percent_change": 137.95,
+              "expected_direction": "decrease",
+              "meaning": "reverb tail levels out spectral peaks"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.094474,
+              "copy_value": 1.515548,
+              "delta": 0.421075,
+              "percent_change": 38.47,
+              "expected_direction": "decrease",
+              "meaning": "space effects reduce abrupt spectral change"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.530957,
+              "copy_value": 0.703948,
+              "delta": 0.172991,
+              "percent_change": 32.58,
+              "expected_direction": "increase",
+              "meaning": "echo repeats modulate the RMS envelope"
+            },
+            {
+              "feature": "energy_decay",
+              "reference_value": 1.799334,
+              "copy_value": 2.138731,
+              "delta": 0.339397,
+              "percent_change": 18.86,
+              "expected_direction": "increase",
+              "meaning": "space effects sustain energy in the tail"
+            }
+          ]
+        },
+        {
+          "axis": "phase",
+          "reference_amount": 50,
+          "copy_amount": 50,
+          "difference": 0,
+          "similarity": 1.0,
+          "action": "keep",
+          "message": "[위상계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "delta_mfcc_std",
+              "reference_value": 1.50371,
+              "copy_value": 2.588972,
+              "delta": 1.085262,
+              "percent_change": 72.17,
+              "expected_direction": "increase",
+              "meaning": "tone colour shifts frame by frame"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.094474,
+              "copy_value": 1.515548,
+              "delta": 0.421075,
+              "percent_change": 38.47,
+              "expected_direction": "increase",
+              "meaning": "chorus/phaser continuously sweeps the spectrum"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.530957,
+              "copy_value": 0.703948,
+              "delta": 0.172991,
+              "percent_change": 32.58,
+              "expected_direction": "increase",
+              "meaning": "LFO adds amplitude wobble (core-gated)"
+            },
+            {
+              "feature": "mfcc_modulation_variance",
+              "reference_value": 1104.033325,
+              "copy_value": 1388.469849,
+              "delta": 284.436523,
+              "percent_change": 25.76,
+              "expected_direction": "increase",
+              "meaning": "cepstral coefficients vary with modulation"
+            },
+            {
+              "feature": "centroid_modulation_depth",
+              "reference_value": 0.391341,
+              "copy_value": 0.445192,
+              "delta": 0.053851,
+              "percent_change": 13.76,
+              "expected_direction": "increase",
+              "meaning": "brightness oscillates with LFO sweep"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Phase Clean→25",
+      "axis": "phase",
+      "expected_dir": "+",
+      "status": "PASS",
+      "diagnosis": "방향 정확 ✓",
+      "ref_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\clean_solo_5.wav",
+      "copy_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\chorus_25_solo_5.wav",
+      "note": "",
+      "target_axis": {
+        "axis": "phase",
+        "reference_amount": 50,
+        "copy_amount": 74,
+        "difference": 24,
+        "similarity": 0.76,
+        "action": "lower",
+        "message": "[위상계] 원본보다 셉니다. 강도를 줄여주세요. 🔽",
+        "features": [
+          {
+            "feature": "spectral_flux",
+            "reference_value": 1.515548,
+            "copy_value": 1.698503,
+            "delta": 0.182955,
+            "percent_change": 12.07,
+            "expected_direction": "increase",
+            "meaning": "chorus/phaser continuously sweeps the spectrum"
+          },
+          {
+            "feature": "mfcc_modulation_variance",
+            "reference_value": 1388.469849,
+            "copy_value": 1327.082764,
+            "delta": -61.387085,
+            "percent_change": -4.42,
+            "expected_direction": "increase",
+            "meaning": "cepstral coefficients vary with modulation"
+          },
+          {
+            "feature": "modulation_energy",
+            "reference_value": 0.682906,
+            "copy_value": 0.697212,
+            "delta": 0.014306,
+            "percent_change": 2.09,
+            "expected_direction": "increase",
+            "meaning": "LFO creates RMS energy in 0.3–8 Hz band"
+          },
+          {
+            "feature": "centroid_modulation_depth",
+            "reference_value": 0.445192,
+            "copy_value": 0.4368,
+            "delta": -0.008392,
+            "percent_change": -1.88,
+            "expected_direction": "increase",
+            "meaning": "brightness oscillates with LFO sweep"
+          },
+          {
+            "feature": "amplitude_modulation",
+            "reference_value": 0.703948,
+            "copy_value": 0.706122,
+            "delta": 0.002174,
+            "percent_change": 0.31,
+            "expected_direction": "increase",
+            "meaning": "LFO adds amplitude wobble (core-gated)"
+          }
+        ]
+      },
+      "all_axes": [
+        {
+          "axis": "drive",
+          "reference_amount": 50,
+          "copy_amount": 47,
+          "difference": -3,
+          "similarity": 0.97,
+          "action": "keep",
+          "message": "[드라이브] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.003276,
+              "copy_value": 0.002619,
+              "delta": -0.000658,
+              "percent_change": -20.07,
+              "expected_direction": "increase",
+              "meaning": "distortion makes the spectrum noise-like"
+            },
+            {
+              "feature": "zcr",
+              "reference_value": 0.078698,
+              "copy_value": 0.074556,
+              "delta": -0.004142,
+              "percent_change": -5.26,
+              "expected_direction": "increase",
+              "meaning": "clipping creates high-frequency zero crossings"
+            },
+            {
+              "feature": "autocorrelation",
+              "reference_value": 0.654483,
+              "copy_value": 0.627146,
+              "delta": -0.027337,
+              "percent_change": -4.18,
+              "expected_direction": "decrease",
+              "meaning": "distortion lowers waveform periodicity"
+            },
+            {
+              "feature": "spectral_bandwidth",
+              "reference_value": 0.085893,
+              "copy_value": 0.088707,
+              "delta": 0.002814,
+              "percent_change": 3.28,
+              "expected_direction": "increase",
+              "meaning": "harmonics widen the frequency spread"
+            },
+            {
+              "feature": "rms",
+              "reference_value": 0.125376,
+              "copy_value": 0.127212,
+              "delta": 0.001837,
+              "percent_change": 1.46,
+              "expected_direction": "increase",
+              "meaning": "drive raises average signal energy"
+            }
+          ]
+        },
+        {
+          "axis": "space",
+          "reference_amount": 50,
+          "copy_amount": 54,
+          "difference": 4,
+          "similarity": 0.96,
+          "action": "keep",
+          "message": "[공간계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.003276,
+              "copy_value": 0.002619,
+              "delta": -0.000658,
+              "percent_change": -20.07,
+              "expected_direction": "decrease",
+              "meaning": "reverb tail levels out spectral peaks"
+            },
+            {
+              "feature": "spectral_flux_variance",
+              "reference_value": 2.600621,
+              "copy_value": 2.253437,
+              "delta": -0.347185,
+              "percent_change": -13.35,
+              "expected_direction": "decrease",
+              "meaning": "reverb/delay smooths spectral-change variance"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.515548,
+              "copy_value": 1.698503,
+              "delta": 0.182955,
+              "percent_change": 12.07,
+              "expected_direction": "decrease",
+              "meaning": "space effects reduce abrupt spectral change"
+            },
+            {
+              "feature": "energy_decay",
+              "reference_value": 2.138731,
+              "copy_value": 2.078601,
+              "delta": -0.060129,
+              "percent_change": -2.81,
+              "expected_direction": "increase",
+              "meaning": "space effects sustain energy in the tail"
+            },
+            {
+              "feature": "sustain_ratio",
+              "reference_value": 0.678876,
+              "copy_value": 0.663969,
+              "delta": -0.014906,
+              "percent_change": -2.2,
+              "expected_direction": "increase",
+              "meaning": "reverb extends the voiced portion of the signal"
+            }
+          ]
+        },
+        {
+          "axis": "phase",
+          "reference_amount": 50,
+          "copy_amount": 74,
+          "difference": 24,
+          "similarity": 0.76,
+          "action": "lower",
+          "message": "[위상계] 원본보다 셉니다. 강도를 줄여주세요. 🔽",
+          "features": [
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.515548,
+              "copy_value": 1.698503,
+              "delta": 0.182955,
+              "percent_change": 12.07,
+              "expected_direction": "increase",
+              "meaning": "chorus/phaser continuously sweeps the spectrum"
+            },
+            {
+              "feature": "mfcc_modulation_variance",
+              "reference_value": 1388.469849,
+              "copy_value": 1327.082764,
+              "delta": -61.387085,
+              "percent_change": -4.42,
+              "expected_direction": "increase",
+              "meaning": "cepstral coefficients vary with modulation"
+            },
+            {
+              "feature": "modulation_energy",
+              "reference_value": 0.682906,
+              "copy_value": 0.697212,
+              "delta": 0.014306,
+              "percent_change": 2.09,
+              "expected_direction": "increase",
+              "meaning": "LFO creates RMS energy in 0.3–8 Hz band"
+            },
+            {
+              "feature": "centroid_modulation_depth",
+              "reference_value": 0.445192,
+              "copy_value": 0.4368,
+              "delta": -0.008392,
+              "percent_change": -1.88,
+              "expected_direction": "increase",
+              "meaning": "brightness oscillates with LFO sweep"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.703948,
+              "copy_value": 0.706122,
+              "delta": 0.002174,
+              "percent_change": 0.31,
+              "expected_direction": "increase",
+              "meaning": "LFO adds amplitude wobble (core-gated)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Phase   25→50",
+      "axis": "phase",
+      "expected_dir": "+",
+      "status": "FAIL",
+      "diagnosis": "'keep' (diff=-5) — lower/turn_off 기대. 물리적으로 변화량이 임계값 미만이거나 피처 억제 과잉 가능성.",
+      "ref_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\chorus_25_solo_5.wav",
+      "copy_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\chorus_50_solo_5.wav",
+      "note": "",
+      "target_axis": {
+        "axis": "phase",
+        "reference_amount": 50,
+        "copy_amount": 45,
+        "difference": -5,
+        "similarity": 0.95,
+        "action": "keep",
+        "message": "[위상계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+        "features": [
+          {
+            "feature": "mfcc_modulation_variance",
+            "reference_value": 1327.082764,
+            "copy_value": 1502.424927,
+            "delta": 175.342163,
+            "percent_change": 13.21,
+            "expected_direction": "increase",
+            "meaning": "cepstral coefficients vary with modulation"
+          },
+          {
+            "feature": "centroid_modulation_depth",
+            "reference_value": 0.4368,
+            "copy_value": 0.401662,
+            "delta": -0.035138,
+            "percent_change": -8.04,
+            "expected_direction": "increase",
+            "meaning": "brightness oscillates with LFO sweep"
+          },
+          {
+            "feature": "harmonic_ratio",
+            "reference_value": 0.968136,
+            "copy_value": 0.940333,
+            "delta": -0.027803,
+            "percent_change": -2.87,
+            "expected_direction": "decrease",
+            "meaning": "comb filtering disrupts stable harmonic structure"
+          },
+          {
+            "feature": "spectral_flux",
+            "reference_value": 1.698503,
+            "copy_value": 1.6601,
+            "delta": -0.038404,
+            "percent_change": -2.26,
+            "expected_direction": "increase",
+            "meaning": "chorus/phaser continuously sweeps the spectrum"
+          },
+          {
+            "feature": "modulation_energy",
+            "reference_value": 0.697212,
+            "copy_value": 0.689923,
+            "delta": -0.007288,
+            "percent_change": -1.05,
+            "expected_direction": "increase",
+            "meaning": "LFO creates RMS energy in 0.3–8 Hz band"
+          }
+        ]
+      },
+      "all_axes": [
+        {
+          "axis": "drive",
+          "reference_amount": 50,
+          "copy_amount": 44,
+          "difference": -6,
+          "similarity": 0.94,
+          "action": "keep",
+          "message": "[드라이브] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "autocorrelation",
+              "reference_value": 0.627146,
+              "copy_value": 0.473307,
+              "delta": -0.153839,
+              "percent_change": -24.53,
+              "expected_direction": "decrease",
+              "meaning": "distortion lowers waveform periodicity"
+            },
+            {
+              "feature": "crest_factor",
+              "reference_value": 7.860865,
+              "copy_value": 8.851307,
+              "delta": 0.990442,
+              "percent_change": 12.6,
+              "expected_direction": "decrease",
+              "meaning": "clipping reduces peak-to-RMS ratio"
+            },
+            {
+              "feature": "rms",
+              "reference_value": 0.127212,
+              "copy_value": 0.112978,
+              "delta": -0.014235,
+              "percent_change": -11.19,
+              "expected_direction": "increase",
+              "meaning": "drive raises average signal energy"
+            },
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.002619,
+              "copy_value": 0.002698,
+              "delta": 7.9e-05,
+              "percent_change": 3.02,
+              "expected_direction": "increase",
+              "meaning": "distortion makes the spectrum noise-like"
+            },
+            {
+              "feature": "harmonic_ratio",
+              "reference_value": 0.968136,
+              "copy_value": 0.940333,
+              "delta": -0.027803,
+              "percent_change": -2.87,
+              "expected_direction": "decrease",
+              "meaning": "drive adds percussive transient content"
+            }
+          ]
+        },
+        {
+          "axis": "space",
+          "reference_amount": 50,
+          "copy_amount": 56,
+          "difference": 6,
+          "similarity": 0.94,
+          "action": "keep",
+          "message": "[공간계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "rms",
+              "reference_value": 0.127212,
+              "copy_value": 0.112978,
+              "delta": -0.014235,
+              "percent_change": -11.19,
+              "expected_direction": "increase",
+              "meaning": "reverb/delay tail raises average energy"
+            },
+            {
+              "feature": "spectral_flux_variance",
+              "reference_value": 2.253437,
+              "copy_value": 2.036825,
+              "delta": -0.216611,
+              "percent_change": -9.61,
+              "expected_direction": "decrease",
+              "meaning": "reverb/delay smooths spectral-change variance"
+            },
+            {
+              "feature": "spectral_contrast",
+              "reference_value": 27.650236,
+              "copy_value": 26.474449,
+              "delta": -1.175786,
+              "percent_change": -4.25,
+              "expected_direction": "decrease",
+              "meaning": "space effects soften inter-band contrast"
+            },
+            {
+              "feature": "energy_decay",
+              "reference_value": 2.078601,
+              "copy_value": 2.153193,
+              "delta": 0.074592,
+              "percent_change": 3.59,
+              "expected_direction": "increase",
+              "meaning": "space effects sustain energy in the tail"
+            },
+            {
+              "feature": "sustain_ratio",
+              "reference_value": 0.663969,
+              "copy_value": 0.684838,
+              "delta": 0.020869,
+              "percent_change": 3.14,
+              "expected_direction": "increase",
+              "meaning": "reverb extends the voiced portion of the signal"
+            }
+          ]
+        },
+        {
+          "axis": "phase",
+          "reference_amount": 50,
+          "copy_amount": 45,
+          "difference": -5,
+          "similarity": 0.95,
+          "action": "keep",
+          "message": "[위상계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "mfcc_modulation_variance",
+              "reference_value": 1327.082764,
+              "copy_value": 1502.424927,
+              "delta": 175.342163,
+              "percent_change": 13.21,
+              "expected_direction": "increase",
+              "meaning": "cepstral coefficients vary with modulation"
+            },
+            {
+              "feature": "centroid_modulation_depth",
+              "reference_value": 0.4368,
+              "copy_value": 0.401662,
+              "delta": -0.035138,
+              "percent_change": -8.04,
+              "expected_direction": "increase",
+              "meaning": "brightness oscillates with LFO sweep"
+            },
+            {
+              "feature": "harmonic_ratio",
+              "reference_value": 0.968136,
+              "copy_value": 0.940333,
+              "delta": -0.027803,
+              "percent_change": -2.87,
+              "expected_direction": "decrease",
+              "meaning": "comb filtering disrupts stable harmonic structure"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.698503,
+              "copy_value": 1.6601,
+              "delta": -0.038404,
+              "percent_change": -2.26,
+              "expected_direction": "increase",
+              "meaning": "chorus/phaser continuously sweeps the spectrum"
+            },
+            {
+              "feature": "modulation_energy",
+              "reference_value": 0.697212,
+              "copy_value": 0.689923,
+              "delta": -0.007288,
+              "percent_change": -1.05,
+              "expected_direction": "increase",
+              "meaning": "LFO creates RMS energy in 0.3–8 Hz band"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Phase   25→75",
+      "axis": "phase",
+      "expected_dir": "+",
+      "status": "PASS",
+      "diagnosis": "방향 정확 ✓",
+      "ref_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\chorus_25_solo_5.wav",
+      "copy_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\chorus_75_solo_5.wav",
+      "note": "",
+      "target_axis": {
+        "axis": "phase",
+        "reference_amount": 50,
+        "copy_amount": 67,
+        "difference": 17,
+        "similarity": 0.83,
+        "action": "lower",
+        "message": "[위상계] 원본보다 셉니다. 강도를 줄여주세요. 🔽",
+        "features": [
+          {
+            "feature": "mfcc_modulation_variance",
+            "reference_value": 1327.082764,
+            "copy_value": 1736.005981,
+            "delta": 408.923218,
+            "percent_change": 30.81,
+            "expected_direction": "increase",
+            "meaning": "cepstral coefficients vary with modulation"
+          },
+          {
+            "feature": "harmonic_ratio",
+            "reference_value": 0.968136,
+            "copy_value": 0.773991,
+            "delta": -0.194145,
+            "percent_change": -20.05,
+            "expected_direction": "decrease",
+            "meaning": "comb filtering disrupts stable harmonic structure"
+          },
+          {
+            "feature": "centroid_modulation_depth",
+            "reference_value": 0.4368,
+            "copy_value": 0.369937,
+            "delta": -0.066863,
+            "percent_change": -15.31,
+            "expected_direction": "increase",
+            "meaning": "brightness oscillates with LFO sweep"
+          },
+          {
+            "feature": "delta_mfcc_std",
+            "reference_value": 2.593138,
+            "copy_value": 2.77826,
+            "delta": 0.185121,
+            "percent_change": 7.14,
+            "expected_direction": "increase",
+            "meaning": "tone colour shifts frame by frame"
+          },
+          {
+            "feature": "spectral_flux",
+            "reference_value": 1.698503,
+            "copy_value": 1.764497,
+            "delta": 0.065994,
+            "percent_change": 3.89,
+            "expected_direction": "increase",
+            "meaning": "chorus/phaser continuously sweeps the spectrum"
+          }
+        ]
+      },
+      "all_axes": [
+        {
+          "axis": "drive",
+          "reference_amount": 50,
+          "copy_amount": 50,
+          "difference": 0,
+          "similarity": 1.0,
+          "action": "keep",
+          "message": "[드라이브] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "autocorrelation",
+              "reference_value": 0.627146,
+              "copy_value": 0.418066,
+              "delta": -0.20908,
+              "percent_change": -33.34,
+              "expected_direction": "decrease",
+              "meaning": "distortion lowers waveform periodicity"
+            },
+            {
+              "feature": "harmonic_ratio",
+              "reference_value": 0.968136,
+              "copy_value": 0.773991,
+              "delta": -0.194145,
+              "percent_change": -20.05,
+              "expected_direction": "decrease",
+              "meaning": "drive adds percussive transient content"
+            },
+            {
+              "feature": "spectral_bandwidth",
+              "reference_value": 0.088707,
+              "copy_value": 0.084084,
+              "delta": -0.004623,
+              "percent_change": -5.21,
+              "expected_direction": "increase",
+              "meaning": "harmonics widen the frequency spread"
+            },
+            {
+              "feature": "rms",
+              "reference_value": 0.127212,
+              "copy_value": 0.130038,
+              "delta": 0.002826,
+              "percent_change": 2.22,
+              "expected_direction": "increase",
+              "meaning": "drive raises average signal energy"
+            },
+            {
+              "feature": "crest_factor",
+              "reference_value": 7.860865,
+              "copy_value": 7.690058,
+              "delta": -0.170807,
+              "percent_change": -2.17,
+              "expected_direction": "decrease",
+              "meaning": "clipping reduces peak-to-RMS ratio"
+            }
+          ]
+        },
+        {
+          "axis": "space",
+          "reference_amount": 50,
+          "copy_amount": 58,
+          "difference": 8,
+          "similarity": 0.92,
+          "action": "keep",
+          "message": "[공간계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "spectral_flux_variance",
+              "reference_value": 2.253437,
+              "copy_value": 1.739641,
+              "delta": -0.513796,
+              "percent_change": -22.8,
+              "expected_direction": "decrease",
+              "meaning": "reverb/delay smooths spectral-change variance"
+            },
+            {
+              "feature": "spectral_contrast",
+              "reference_value": 27.650236,
+              "copy_value": 25.27878,
+              "delta": -2.371455,
+              "percent_change": -8.58,
+              "expected_direction": "decrease",
+              "meaning": "space effects soften inter-band contrast"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.698503,
+              "copy_value": 1.764497,
+              "delta": 0.065994,
+              "percent_change": 3.89,
+              "expected_direction": "decrease",
+              "meaning": "space effects reduce abrupt spectral change"
+            },
+            {
+              "feature": "energy_decay",
+              "reference_value": 2.078601,
+              "copy_value": 2.140421,
+              "delta": 0.061819,
+              "percent_change": 2.97,
+              "expected_direction": "increase",
+              "meaning": "space effects sustain energy in the tail"
+            },
+            {
+              "feature": "sustain_ratio",
+              "reference_value": 0.663969,
+              "copy_value": 0.679302,
+              "delta": 0.015332,
+              "percent_change": 2.31,
+              "expected_direction": "increase",
+              "meaning": "reverb extends the voiced portion of the signal"
+            }
+          ]
+        },
+        {
+          "axis": "phase",
+          "reference_amount": 50,
+          "copy_amount": 67,
+          "difference": 17,
+          "similarity": 0.83,
+          "action": "lower",
+          "message": "[위상계] 원본보다 셉니다. 강도를 줄여주세요. 🔽",
+          "features": [
+            {
+              "feature": "mfcc_modulation_variance",
+              "reference_value": 1327.082764,
+              "copy_value": 1736.005981,
+              "delta": 408.923218,
+              "percent_change": 30.81,
+              "expected_direction": "increase",
+              "meaning": "cepstral coefficients vary with modulation"
+            },
+            {
+              "feature": "harmonic_ratio",
+              "reference_value": 0.968136,
+              "copy_value": 0.773991,
+              "delta": -0.194145,
+              "percent_change": -20.05,
+              "expected_direction": "decrease",
+              "meaning": "comb filtering disrupts stable harmonic structure"
+            },
+            {
+              "feature": "centroid_modulation_depth",
+              "reference_value": 0.4368,
+              "copy_value": 0.369937,
+              "delta": -0.066863,
+              "percent_change": -15.31,
+              "expected_direction": "increase",
+              "meaning": "brightness oscillates with LFO sweep"
+            },
+            {
+              "feature": "delta_mfcc_std",
+              "reference_value": 2.593138,
+              "copy_value": 2.77826,
+              "delta": 0.185121,
+              "percent_change": 7.14,
+              "expected_direction": "increase",
+              "meaning": "tone colour shifts frame by frame"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.698503,
+              "copy_value": 1.764497,
+              "delta": 0.065994,
+              "percent_change": 3.89,
+              "expected_direction": "increase",
+              "meaning": "chorus/phaser continuously sweeps the spectrum"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Phase  25→Clean",
+      "axis": "phase",
+      "expected_dir": "-",
+      "status": "PASS",
+      "diagnosis": "방향 정확 ✓",
+      "ref_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\chorus_25_solo_5.wav",
+      "copy_path": "C:\\Users\\Owner\\Desktop\\-SW-3-\\play\\clean_solo_5.wav",
+      "note": "",
+      "target_axis": {
+        "axis": "phase",
+        "reference_amount": 50,
+        "copy_amount": 28,
+        "difference": -22,
+        "similarity": 0.78,
+        "action": "raise",
+        "message": "[위상계] 원본보다 약합니다. 강도를 더 올려주세요. 🔼",
+        "features": [
+          {
+            "feature": "spectral_flux",
+            "reference_value": 1.698503,
+            "copy_value": 1.515548,
+            "delta": -0.182955,
+            "percent_change": -10.77,
+            "expected_direction": "increase",
+            "meaning": "chorus/phaser continuously sweeps the spectrum"
+          },
+          {
+            "feature": "mfcc_modulation_variance",
+            "reference_value": 1327.082764,
+            "copy_value": 1388.469849,
+            "delta": 61.387085,
+            "percent_change": 4.63,
+            "expected_direction": "increase",
+            "meaning": "cepstral coefficients vary with modulation"
+          },
+          {
+            "feature": "modulation_energy",
+            "reference_value": 0.697212,
+            "copy_value": 0.682906,
+            "delta": -0.014306,
+            "percent_change": -2.05,
+            "expected_direction": "increase",
+            "meaning": "LFO creates RMS energy in 0.3–8 Hz band"
+          },
+          {
+            "feature": "centroid_modulation_depth",
+            "reference_value": 0.4368,
+            "copy_value": 0.445192,
+            "delta": 0.008392,
+            "percent_change": 1.92,
+            "expected_direction": "increase",
+            "meaning": "brightness oscillates with LFO sweep"
+          },
+          {
+            "feature": "amplitude_modulation",
+            "reference_value": 0.706122,
+            "copy_value": 0.703948,
+            "delta": -0.002174,
+            "percent_change": -0.31,
+            "expected_direction": "increase",
+            "meaning": "LFO adds amplitude wobble (core-gated)"
+          }
+        ]
+      },
+      "all_axes": [
+        {
+          "axis": "drive",
+          "reference_amount": 50,
+          "copy_amount": 54,
+          "difference": 4,
+          "similarity": 0.96,
+          "action": "keep",
+          "message": "[드라이브] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.002619,
+              "copy_value": 0.003276,
+              "delta": 0.000658,
+              "percent_change": 25.11,
+              "expected_direction": "increase",
+              "meaning": "distortion makes the spectrum noise-like"
+            },
+            {
+              "feature": "zcr",
+              "reference_value": 0.074556,
+              "copy_value": 0.078698,
+              "delta": 0.004142,
+              "percent_change": 5.56,
+              "expected_direction": "increase",
+              "meaning": "clipping creates high-frequency zero crossings"
+            },
+            {
+              "feature": "autocorrelation",
+              "reference_value": 0.627146,
+              "copy_value": 0.654483,
+              "delta": 0.027337,
+              "percent_change": 4.36,
+              "expected_direction": "decrease",
+              "meaning": "distortion lowers waveform periodicity"
+            },
+            {
+              "feature": "spectral_bandwidth",
+              "reference_value": 0.088707,
+              "copy_value": 0.085893,
+              "delta": -0.002814,
+              "percent_change": -3.17,
+              "expected_direction": "increase",
+              "meaning": "harmonics widen the frequency spread"
+            },
+            {
+              "feature": "crest_factor",
+              "reference_value": 7.860865,
+              "copy_value": 7.976018,
+              "delta": 0.115153,
+              "percent_change": 1.46,
+              "expected_direction": "decrease",
+              "meaning": "clipping reduces peak-to-RMS ratio"
+            }
+          ]
+        },
+        {
+          "axis": "space",
+          "reference_amount": 50,
+          "copy_amount": 44,
+          "difference": -6,
+          "similarity": 0.94,
+          "action": "keep",
+          "message": "[공간계] 완벽합니다! 지금 톤을 그대로 유지하세요. 🎵",
+          "features": [
+            {
+              "feature": "spectral_flatness",
+              "reference_value": 0.002619,
+              "copy_value": 0.003276,
+              "delta": 0.000658,
+              "percent_change": 25.11,
+              "expected_direction": "decrease",
+              "meaning": "reverb tail levels out spectral peaks"
+            },
+            {
+              "feature": "spectral_flux_variance",
+              "reference_value": 2.253437,
+              "copy_value": 2.600621,
+              "delta": 0.347185,
+              "percent_change": 15.41,
+              "expected_direction": "decrease",
+              "meaning": "reverb/delay smooths spectral-change variance"
+            },
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.698503,
+              "copy_value": 1.515548,
+              "delta": -0.182955,
+              "percent_change": -10.77,
+              "expected_direction": "decrease",
+              "meaning": "space effects reduce abrupt spectral change"
+            },
+            {
+              "feature": "energy_decay",
+              "reference_value": 2.078601,
+              "copy_value": 2.138731,
+              "delta": 0.060129,
+              "percent_change": 2.89,
+              "expected_direction": "increase",
+              "meaning": "space effects sustain energy in the tail"
+            },
+            {
+              "feature": "sustain_ratio",
+              "reference_value": 0.663969,
+              "copy_value": 0.678876,
+              "delta": 0.014906,
+              "percent_change": 2.25,
+              "expected_direction": "increase",
+              "meaning": "reverb extends the voiced portion of the signal"
+            }
+          ]
+        },
+        {
+          "axis": "phase",
+          "reference_amount": 50,
+          "copy_amount": 28,
+          "difference": -22,
+          "similarity": 0.78,
+          "action": "raise",
+          "message": "[위상계] 원본보다 약합니다. 강도를 더 올려주세요. 🔼",
+          "features": [
+            {
+              "feature": "spectral_flux",
+              "reference_value": 1.698503,
+              "copy_value": 1.515548,
+              "delta": -0.182955,
+              "percent_change": -10.77,
+              "expected_direction": "increase",
+              "meaning": "chorus/phaser continuously sweeps the spectrum"
+            },
+            {
+              "feature": "mfcc_modulation_variance",
+              "reference_value": 1327.082764,
+              "copy_value": 1388.469849,
+              "delta": 61.387085,
+              "percent_change": 4.63,
+              "expected_direction": "increase",
+              "meaning": "cepstral coefficients vary with modulation"
+            },
+            {
+              "feature": "modulation_energy",
+              "reference_value": 0.697212,
+              "copy_value": 0.682906,
+              "delta": -0.014306,
+              "percent_change": -2.05,
+              "expected_direction": "increase",
+              "meaning": "LFO creates RMS energy in 0.3–8 Hz band"
+            },
+            {
+              "feature": "centroid_modulation_depth",
+              "reference_value": 0.4368,
+              "copy_value": 0.445192,
+              "delta": 0.008392,
+              "percent_change": 1.92,
+              "expected_direction": "increase",
+              "meaning": "brightness oscillates with LFO sweep"
+            },
+            {
+              "feature": "amplitude_modulation",
+              "reference_value": 0.706122,
+              "copy_value": 0.703948,
+              "delta": -0.002174,
+              "percent_change": -0.31,
+              "expected_direction": "increase",
+              "meaning": "LFO adds amplitude wobble (core-gated)"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
