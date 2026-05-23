@@ -72,9 +72,10 @@ function withAbsoluteUrls(data: AnalysisResponse): AnalysisResponse {
 }
 
 
-export async function getFeedback(file: File): Promise<SimpleResponse> {
+export async function getFeedback(file: File, sourceID: number): Promise<SimpleResponse> {
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("source_id", sourceID.toString());
 
   const response = await fetch(`${API_BASE_URL}/ai/feedback/`, {
     method: "POST",

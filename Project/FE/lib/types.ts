@@ -18,6 +18,7 @@ export type TimelineSegment = {
 export type AnalysisResponse = {
   success: boolean;
   source_type: "file" | "youtube";
+  source_id?: number;
   source_name: string;
   predicted_effect: string;
   predicted_effect_display_name: string;

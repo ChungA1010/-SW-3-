@@ -24,6 +24,7 @@ export function ResultView({ result }: { result: AnalysisResponse }) {
         return (
             <FeedbackRecorder
                 targetEffect={result.predicted_effect} // 필요에 따라 display_name 등으로 수정
+                sourceId={result.source_id}
                 onCancel={() => setIsRecordingMode(false)}
             />
         );

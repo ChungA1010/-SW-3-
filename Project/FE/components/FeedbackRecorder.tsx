@@ -3,15 +3,14 @@
 import { useState, useRef } from "react";
 import { getFeedback } from "@/lib/api";
 import { SimpleResponse } from "@/lib/types";
-//api import
 
-export function FeedbackRecorder({
-    targetEffect,
-    onCancel
-}: {
-    targetEffect: string;
+interface Props {
+    targetEffect?: string;
+    sourceId?: number; // 👈 📌 ResultView에서 받아올 Props 정의
     onCancel: () => void;
-}) {
+}
+
+export function FeedbackRecorder({ targetEffect, sourceId, onCancel }: Props) {
     const [isRecording, setIsRecording] = useState(false);
     const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -141,6 +140,10 @@ export function FeedbackRecorder({
     const handleSendFeedback = async () => {
         //녹음된 파일이 없으면 실행하지 않음
         if (!recordedBlob) return;
+        if (!sourceId) {
+            alert("원본 트랙 정보가 없습니다.");
+            return;
+        }
 
         setIsAnalyzing(true);
         setFeedbackResult(null);
@@ -150,7 +153,7 @@ export function FeedbackRecorder({
             const file = new File([recordedBlob], "my_feedback.webm", { type: "audio/webm" });
 
             //변환된 file을 getFeedback에 전달합니다!
-            const response = await getFeedback(file);
+            const response = await getFeedback(file, sourceId);
             setFeedbackResult(response);
         } catch (error) {
             console.error(error);
