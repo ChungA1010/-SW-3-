@@ -5,7 +5,14 @@
       "Bash(python -c ' *)",
       "Bash(python -c \"import sys; sys.stdout.buffer.write\\(sys.stdin.buffer.read\\(\\)\\)\")",
       "Bash(python bva_test.py --wav-dir play --recording solo --output bva_results.json)",
-      "Bash(python bva_test.py --wav-dir play --recording solo)"
+      "Bash(python bva_test.py --wav-dir play --recording solo)",
+      "Bash(git rm *)",
+      "Bash(python -c \"from tone_match_model import ToneMatchModel; print\\('Import OK'\\)\")",
+      "Bash(python extended_tone_test.py --effects dist chorus phase --nums 5)",
+      "Bash(python extended_tone_test.py --effects dist chorus --nums 5)",
+      "Bash(python extended_tone_test.py --effects reverb --nums 5)",
+      "Bash(python extended_tone_test.py --effects dist reverb chorus --nums 5)",
+      "Bash(python -c \"import tone_match_model; import extended_tone_test; print\\('OK'\\)\")"
     ]
   }
 }
