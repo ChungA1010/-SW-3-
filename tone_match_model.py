@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -12,8 +14,12 @@ from scipy.signal import find_peaks
 
 EPSILON = 1e-8
 
-# Effects supported by the upstream classifier
-_ALL_EFFECTS: list[str] = ["dist", "reverb", "chorus"]
+# Effects resolved from filenames (dist→drive, delay→space, phaser→phase)
+_ALL_EFFECTS: list[str] = ["dist", "delay", "phaser"]
+
+# Matches only the three target effects followed by an underscore and digits.
+# Whitelist prevents playing_type tokens (solo_3, chord_5) from being captured.
+_EFFECT_PATTERN = re.compile(r"(dist|delay|phaser)_\d+")
 
 
 @dataclass(frozen=True)
@@ -59,17 +65,19 @@ class AxisFeedback:
 
 
 class ToneMatchModel:
-    """Feature-based tone matcher with classifier-guided axis gating.
+    """Feature-based tone matcher that detects active effects from filenames.
 
-    The upstream effect classifier provides active_effects (e.g. ["dist"]).
-    Only the axis corresponding to the active effect is scored; all other
-    axes immediately return difference=0 without feature computation.
+    Effect-to-axis mapping:
+        dist  → Drive axis
+        delay → Space axis  (internal name "space", Korean "공간계" unchanged)
+        phaser→ Phase axis  (internal name "phase", Korean "위상계" unchanged)
 
-    This eliminates cross-axis contamination entirely: no inter-axis penalty
-    logic is needed because the classifier already resolves ambiguity.
+    Active-effect gating: only axes whose effect appears in both or either
+    filename are scored; the rest immediately return difference=0.  This
+    eliminates cross-axis contamination without needing an external classifier.
 
-    Backward-compatible mode (active_effects=None or []): all axes are scored
-    with pure feature-rule tanh scoring, no cross-axis gates.
+    Explicit override: pass active_effects=[...] to bypass filename parsing
+    (e.g. for unit tests or live inference where paths carry no metadata).
     """
 
     def __init__(
@@ -77,7 +85,7 @@ class ToneMatchModel:
         sample_rate: int = 32000,
         hop_length: int = 256,
         max_analysis_seconds: float = 20.0,
-        action_threshold: int = 12,
+        action_threshold: int = 20,
     ) -> None:
         self.sample_rate = sample_rate
         self.hop_length = hop_length
@@ -96,16 +104,23 @@ class ToneMatchModel:
     ) -> dict:
         """Compare reference vs copy audio across Drive / Space / Phase axes.
 
-        active_effects — effect labels from the upstream classifier.
-            Supported labels: "dist" | "reverb" | "chorus"
-            If None or empty, all axes are scored (backward-compatible).
-            Example: ["dist"] → only Drive axis is scored; Space/Phase return 0.
+        active_effects — explicit override list (e.g. ["dist", "delay"]).
+            If None, effects are auto-detected from both filenames (union).
+            Supported labels: "dist" | "delay" | "phaser"
+            Empty union → all axes return keep.
         """
-        effects: list[str] = (
-            [e.lower().strip() for e in active_effects]
-            if active_effects
-            else _ALL_EFFECTS
-        )
+        if active_effects is not None:
+            effects: list[str] = [e.lower().strip() for e in active_effects]
+        else:
+            ref_effects  = self._parse_effects_from_filename(reference_path)
+            copy_effects = self._parse_effects_from_filename(copy_path)
+            seen: set[str] = set()
+            effects = []
+            for e in ref_effects + copy_effects:
+                if e not in seen:
+                    seen.add(e)
+                    effects.append(e)
+            print(f"[auto-detected] ref: {ref_effects}, copy: {copy_effects}, union: {effects}")
 
         ref_audio  = self._load_audio(reference_path)
         copy_audio = self._load_audio(copy_path)
@@ -127,6 +142,32 @@ class ToneMatchModel:
             "overall_similarity": round(total_similarity, 3),
             "axes":               [asdict(ax) for ax in axes],
         }
+
+    # ------------------------------------------------------------------
+    # Filename parser
+    # ------------------------------------------------------------------
+
+    def _parse_effects_from_filename(self, path: str | Path) -> list[str]:
+        """Extract active effects from a wav filename.
+
+        Uses a whitelist regex so playing_type tokens (solo_3, chord_5) are
+        never captured.  chorus/reverb are ignored by design — not in whitelist.
+
+        Examples:
+            dist_50_delay_50_solo_3.wav     → ["dist", "delay"]
+            dist_100_delay_50_phaser_25.wav → ["dist", "delay", "phaser"]
+            chorus_50_chord_5.wav           → []
+            chorus+delay_solo_1.wav         → []  (no _digit suffix after delay)
+        """
+        stem = Path(path).stem
+        matches = _EFFECT_PATTERN.findall(stem)
+        seen: set[str] = set()
+        result: list[str] = []
+        for effect in matches:
+            if effect not in seen:
+                seen.add(effect)
+                result.append(effect)
+        return result
 
     # ------------------------------------------------------------------
     # Audio loading
@@ -228,23 +269,25 @@ class ToneMatchModel:
     def _build_space_axis(
         self, ref: dict[str, float], copy: dict[str, float], active_effects: list[str]
     ) -> AxisFeedback:
-        """Score reverb (Space) axis.
-        Early-returns difference=0 if 'reverb' is not in active_effects.
+        """Score delay (Space) axis.
+        Early-returns difference=0 if 'delay' is not in active_effects.
         """
-        if "reverb" not in active_effects:
+        if "delay" not in active_effects:
             return self._keep_feedback("space")
         return self._build_axis("space", self._space_rules(), ref, copy)
 
     def _build_phase_axis(
         self, ref: dict[str, float], copy: dict[str, float], active_effects: list[str]
     ) -> AxisFeedback:
-        """Score chorus/phaser (Phase) axis.
-        Early-returns difference=0 if 'chorus' is not in active_effects.
-        Uses threshold=5 (half of default) because chorus changes are more subtle.
+        """Phase 축은 강도를 추정하지 않음.
+
+        팀원의 effect classifier가 phaser on/off를 판정해서 연주자에게 알려주고,
+        연주자는 그 결과대로 phaser를 켜고 연주하므로, ref와 copy의 phaser on/off 상태는
+        항상 일치한다고 가정. 따라서 강도 차이는 피드백하지 않고 항상 keep을 반환.
+
+        phaser 강도 추정이 필요해질 경우를 대비해 _phase_rules()는 남겨둠 (현재 호출 안 됨).
         """
-        if "chorus" not in active_effects:
-            return self._keep_feedback("phase")
-        return self._build_axis("phase", self._phase_rules(), ref, copy, threshold=5)
+        return self._keep_feedback("phase")
 
     def _build_axis(
         self,
@@ -340,49 +383,51 @@ class ToneMatchModel:
     # ------------------------------------------------------------------
 
     def _drive_rules(self) -> list[FeatureRule]:
-        """Distortion fingerprints: clipping collapses crest_factor, raises RMS/ZCR/flatness."""
+        """Distortion fingerprints (re-tuned to reduce phaser cross-axis noise).
+
+        Phaser 25→100 isolated 진단 결과:
+          spectral_flatness -44%, autocorrelation -40%, spectral_bandwidth -14%
+        → phaser 변화에 흔들려 drive 점수 오염; 가중치 추가 감량 또는 제거.
+
+        Kept (dist-specific): crest_factor (phaser +4%), rms (phaser -2%), zcr (phaser -1%)
+        Reduced: spectral_bandwidth (phaser -14%), harmonic_ratio (phaser -26%)
+        Removed: spectral_flatness (모든 이펙터 반응), autocorrelation (phaser -40%)
+        """
         return [
-            # crest_factor is the single most reliable distortion indicator.
-            # Clipping hard-limits peaks → RMS rises while peak stays near 1.0.
-            FeatureRule("crest_factor",       "decrease", "clipping collapses peak-to-RMS ratio",           weight=3.5, sensitivity=4.0),
-            FeatureRule("rms",                "increase", "drive raises average signal energy",             weight=2.0, sensitivity=4.0),
-            FeatureRule("zcr",                "increase", "clipping creates high-frequency zero crossings", weight=2.0, sensitivity=4.0),
-            FeatureRule("spectral_flatness",  "increase", "distortion makes the spectrum noise-like",       weight=1.5, sensitivity=4.0),
-            FeatureRule("harmonic_ratio",     "decrease", "drive adds percussive transient content",        weight=1.5, sensitivity=4.0),
-            FeatureRule("spectral_bandwidth", "increase", "harmonics widen the frequency spread",           weight=1.0, sensitivity=4.0),
-            FeatureRule("autocorrelation",    "decrease", "distortion lowers waveform periodicity",         weight=1.0, sensitivity=4.0),
-            FeatureRule("amplitude_modulation","increase","distortion raises RMS envelope variation",       weight=0.5, sensitivity=4.0),
+            FeatureRule("crest_factor",       "decrease", "clipping collapses peak-to-RMS ratio",                                  weight=4.0, sensitivity=4.0),
+            FeatureRule("rms",                "increase", "drive raises average signal energy",                                    weight=3.0, sensitivity=4.0),
+            FeatureRule("zcr",                "increase", "clipping creates high-frequency zero crossings",                        weight=2.0, sensitivity=4.0),
+            FeatureRule("spectral_bandwidth", "increase", "harmonics widen the frequency spread (reduced weight: phaser noise)",   weight=1.5, sensitivity=4.0),
+            FeatureRule("harmonic_ratio",     "decrease", "drive adds percussive transient content (reduced weight: phaser noise)", weight=0.5, sensitivity=4.0),
         ]
 
     def _space_rules(self) -> list[FeatureRule]:
-        """Reverb fingerprints: tail energy rises, spectral variation smooths out."""
+        """Delay/reverb fingerprints (re-tuned after cross-axis diagnosis).
+
+        Kept (high specificity): energy_decay (+256% on delay isolated, 다른 이펙터엔 ~0),
+                                  spectral_flux_variance (-21% on delay, dist에 -14%)
+        Removed: rms (dist에 +129%로 폭주 — cross-axis 주범),
+                 spectral_flux (phaser에 +51% — phase로 이관),
+                 spectral_contrast (모든 이펙터에 흔들림),
+                 sustain_ratio (delay 반응 +4%로 약함)
+        """
         return [
-            # energy_decay and sustain_ratio are the most reverb-specific features —
-            # they capture the characteristic decay tail that only reverb creates.
-            FeatureRule("energy_decay",          "increase", "reverb sustains energy deep in the tail",        weight=3.0, sensitivity=3.0),
-            FeatureRule("sustain_ratio",         "increase", "reverb extends the voiced portion of the signal", weight=2.5, sensitivity=4.0),
-            FeatureRule("spectral_flux_variance","decrease", "reverb smooths spectral-change variance over time",weight=2.0, sensitivity=3.0),
-            FeatureRule("spectral_flux",         "decrease", "space effects reduce abrupt spectral change",     weight=2.0, sensitivity=4.0),
-            FeatureRule("spectral_contrast",     "decrease", "space effects soften inter-band contrast",        weight=1.5, sensitivity=3.0),
-            FeatureRule("rms",                   "increase", "reverb tail raises average energy",               weight=1.0, sensitivity=4.0),
+            FeatureRule("energy_decay",          "increase", "delay/reverb sustains energy deep in the tail (highly delay-specific)", weight=5.0, sensitivity=3.0),
+            FeatureRule("spectral_flux_variance","decrease", "delay smooths spectral-change variance over time",                      weight=2.5, sensitivity=3.0),
+            FeatureRule("sustain_ratio",         "increase", "delay extends voiced portion (weak signal, low weight)",                weight=0.5, sensitivity=4.0),
         ]
 
     def _phase_rules(self) -> list[FeatureRule]:
-        """Chorus/phaser fingerprints: LFO creates periodic modulation and spectral sweep.
+        """Phaser fingerprints (currently unused — see _build_phase_axis docstring).
 
-        High sensitivity values (8–12) because chorus changes tend to be subtle
-        (5–20% per intensity step). threshold=5 in _build_phase_axis gives enough
-        headroom to detect even mild intensity transitions (e.g. 50→25).
+        Kept in case phaser intensity estimation is needed later.
+        Last tuned after cross-axis diagnosis; values may need re-validation
+        if reactivated.
         """
         return [
-            # spectral_flux is the strongest chorus indicator — LFO continuously
-            # sweeps the comb filter or all-pass delay, changing the spectrum each frame.
-            FeatureRule("spectral_flux",           "increase", "chorus continuously sweeps the spectrum",        weight=5.0, sensitivity=12.0),
-            FeatureRule("mfcc_modulation_variance","increase", "cepstral coefficients vary with LFO modulation", weight=3.0, sensitivity=12.0),
-            FeatureRule("modulation_energy",       "increase", "LFO creates RMS energy in the 0.3–8 Hz band",    weight=3.0, sensitivity=10.0),
-            FeatureRule("delta_mfcc_std",          "increase", "tone colour shifts frame by frame with the LFO", weight=2.0, sensitivity=10.0),
-            FeatureRule("harmonic_ratio",          "decrease", "comb filtering disrupts stable harmonic structure",weight=2.0, sensitivity=8.0),
-            FeatureRule("amplitude_modulation",    "increase", "LFO adds periodic amplitude wobble",             weight=1.0, sensitivity=8.0),
+            FeatureRule("delta_mfcc_std", "increase", "LFO sweeps timbre frame by frame (phaser-specific)", weight=5.0, sensitivity=10.0),
+            FeatureRule("spectral_flux",  "increase", "phaser notch sweeps the spectrum continuously",      weight=4.0, sensitivity=10.0),
+            FeatureRule("harmonic_ratio", "decrease", "comb filtering disrupts stable harmonics (noisy)",   weight=1.0, sensitivity=8.0),
         ]
 
     # ------------------------------------------------------------------
@@ -432,6 +477,8 @@ class ToneMatchModel:
 
 
 def main() -> int:
+    import io, sys  # noqa: E401
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description="Compare reference and copied guitar effector tones.")
     parser.add_argument("reference_path")
     parser.add_argument("copy_path")
@@ -449,4 +496,13 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if os.environ.get("TONE_MATCH_TEST") == "1":
+        _m = ToneMatchModel()
+        _p = _m._parse_effects_from_filename
+        assert _p("dist_50_delay_50_solo_3.wav")              == ["dist", "delay"],          "1"
+        assert _p("dist_100_delay_50_phaser_25_chord_2.wav")  == ["dist", "delay", "phaser"],"2"
+        assert _p("chorus_50_chord_5.wav")                    == [],                         "3"
+        assert _p("chorus+delay_solo_1.wav")                  == [],                         "4"
+        assert _p("delay_25_chord_1.wav")                     == ["delay"],                  "5"
+        print("All _parse_effects_from_filename tests passed.")
     raise SystemExit(main())
