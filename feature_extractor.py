@@ -1,7 +1,7 @@
 """
 feature_extractor.py
 --------------------
-librosa 기반 피처 추출 + VGGish / YAMNet 임베딩.
+librosa 기반 피처 추출.
 
 추출 피처 목록:
   - MFCC (음색/음소 특성)
@@ -13,14 +13,10 @@ librosa 기반 피처 추출 + VGGish / YAMNet 임베딩.
   - Zero Crossing Rate (파형 거칠기 / 노이즈)
   - RMS Energy (다이나믹)
   - Tonnetz (조성 공간)
-  - VGGish / YAMNet 딥러닝 임베딩
-  - BPM (템포) - 추후 추가 가능
 """
 
 import numpy as np
 import librosa
-# import tensorflow as tf
-# import tensorflow_hub as hub
 from dataclasses import dataclass, field
 
 
@@ -40,8 +36,6 @@ class AudioFeatures:
     zcr:                np.ndarray = field(default_factory=lambda: np.array([]))
     rms:                np.ndarray = field(default_factory=lambda: np.array([]))
     tonnetz:            np.ndarray = field(default_factory=lambda: np.array([]))
-    # vggish_embedding:   np.ndarray = field(default_factory=lambda: np.array([]))
-    # yamnet_embedding:   np.ndarray = field(default_factory=lambda: np.array([]))
 
 
 # ──────────────────────────────────────────
@@ -86,7 +80,7 @@ def extract_librosa_features(
 
     # Chroma: 12개 음정 클래스 에너지 → 음정 일치도
     chroma = librosa.feature.chroma_stft(y=y, sr=sr, hop_length=hop_length)
-    features["chroma"] = chroma 
+    features["chroma"] = chroma
 
     # Zero Crossing Rate: 파형의 부호 변화율 → 노이즈/거칠기
     zcr = librosa.feature.zero_crossing_rate(y=y, hop_length=hop_length)
@@ -100,8 +94,7 @@ def extract_librosa_features(
     try:
         harmonic = librosa.effects.harmonic(y)
         tonnetz = librosa.feature.tonnetz(y=harmonic, sr=sr)
-    except:
-        # 에러 발생 시 6차원 0 벡터로 채워서 멈추지 않게 함
+    except Exception:
         tonnetz = np.zeros((6, chroma.shape[1]))
 
     features["tonnetz"] = tonnetz
@@ -116,118 +109,22 @@ def aggregate_features(features: dict) -> dict:
     """
     aggregated = {}
     for key, feat in features.items():
-        mean = np.mean(feat, axis=1)   # 시간 축 평균
-        std  = np.std(feat,  axis=1)   # 시간 축 표준편차
+        mean = np.mean(feat, axis=1)
+        std  = np.std(feat,  axis=1)
         aggregated[key] = np.concatenate([mean, std])
     return aggregated
-
-
-# # ──────────────────────────────────────────
-# # VGGish 임베딩
-# # ──────────────────────────────────────────
-
-# VGGISH_URL = "https://tfhub.dev/google/vggish/1"
-# _vggish_model = None  # 싱글턴
-
-
-# def get_vggish_model():
-#     global _vggish_model
-#     if _vggish_model is None:
-#         print("[VGGish] 모델 로딩 중...")
-#         _vggish_model = hub.load(VGGISH_URL)
-#         print("[VGGish] 로드 완료.")
-#     return _vggish_model
-
-
-# def extract_vggish_embedding(y: np.ndarray, sr: int) -> np.ndarray:
-#     """
-#     VGGish: 오디오를 0.96초 단위 청크로 분할,
-#     각 청크를 128차원 벡터로 임베딩.
-#     최종적으로 모든 청크의 평균을 반환.
-
-#     Args:
-#         y  : 오디오 시계열 (float32, mono)
-#         sr : 샘플링 레이트 (VGGish는 16000Hz 기준)
-
-#     Returns:
-#         128차원 임베딩 벡터
-#     """
-#     model = get_vggish_model()
-
-#     # VGGish는 16kHz 모노 입력 필요
-#     if sr != 16000:
-#         y = librosa.resample(y, orig_sr=sr, target_sr=16000)
-
-#     # float32 보장
-#     y = y.astype(np.float32)
-
-#     # TF 텐서로 변환
-#     waveform_tensor = tf.constant(y, dtype=tf.float32)
-#     embeddings = model(waveform_tensor)  # shape: (N_chunks, 128)
-
-#     # 청크 평균 → 단일 벡터
-#     return np.mean(embeddings.numpy(), axis=0)  # (128,)
-
-
-# # ──────────────────────────────────────────
-# # YAMNet 임베딩
-# # ──────────────────────────────────────────
-
-# YAMNET_URL = "https://tfhub.dev/google/yamnet/1"
-# _yamnet_model = None  # 싱글턴
-
-
-# def get_yamnet_model():
-#     global _yamnet_model
-#     if _yamnet_model is None:
-#         print("[YAMNet] 모델 로딩 중...")
-#         _yamnet_model = hub.load(YAMNET_URL)
-#         print("[YAMNet] 로드 완료.")
-#     return _yamnet_model
-
-
-# def extract_yamnet_embedding(y: np.ndarray, sr: int) -> np.ndarray:
-#     """
-#     YAMNet: 경량 MobileNet 기반.
-#     오디오를 분석하여 1024차원 임베딩을 반환.
-#     실시간 / 준실시간 서비스에 적합한 속도.
-
-#     Returns:
-#         1024차원 임베딩 벡터 (프레임 평균)
-#     """
-#     model = get_yamnet_model()
-
-#     # YAMNet 역시 16kHz 모노
-#     if sr != 16000:
-#         y = librosa.resample(y, orig_sr=sr, target_sr=16000)
-
-#     y = y.astype(np.float32)
-#     waveform_tensor = tf.constant(y, dtype=tf.float32)
-
-#     # YAMNet 출력: (scores, embeddings, spectrogram)
-#     _, embeddings, _ = model(waveform_tensor)
-
-#     return np.mean(embeddings.numpy(), axis=0)  # (1024,)
 
 
 # ──────────────────────────────────────────
 # 통합 피처 추출
 # ──────────────────────────────────────────
 
-def extract_all_features(
-    y: np.ndarray,
-    sr: int,
-    # use_vggish: bool = True,
-    # use_yamnet: bool = True,
-) -> AudioFeatures:
-    """
-    librosa 피처 + 딥러닝 임베딩을 모두 추출하여
-    AudioFeatures 객체로 반환.
-    """
+def extract_all_features(y: np.ndarray, sr: int) -> AudioFeatures:
+    """librosa 피처를 추출하여 AudioFeatures 객체로 반환."""
     raw = extract_librosa_features(y, sr)
     agg = aggregate_features(raw)
 
-    feat = AudioFeatures(
+    return AudioFeatures(
         mfcc               = agg["mfcc"],
         spectral_centroid  = agg["spectral_centroid"],
         spectral_bandwidth = agg["spectral_bandwidth"],
@@ -238,11 +135,3 @@ def extract_all_features(
         rms                = agg["rms"],
         tonnetz            = agg["tonnetz"],
     )
-
-    # if use_vggish:
-    #     feat.vggish_embedding = extract_vggish_embedding(y, sr)
-
-    # if use_yamnet:
-    #     feat.yamnet_embedding = extract_yamnet_embedding(y, sr)
-
-    return feat
