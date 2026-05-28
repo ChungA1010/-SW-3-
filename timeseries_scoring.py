@@ -64,18 +64,20 @@ def compute_timeseries_errors(
     # MAE를 기반으로 0~100 점수 계산 (30ms 이내는 완벽, 400ms 이상은 실패)
     result.rhythm_score = _score_from_mae(result.onset_mae_ms, perfect=30.0, fail=400.0)
     
-    # 박자 피드백
-    bad_rhythm = abs_onset > onset_issue_threshold
-    if np.any(bad_rhythm):
-        mean_diff = float(np.mean(onset_diffs_ms)) if len(onset_diffs_ms) else 0.0
-        
-        if mean_diff > 30.0:
-            result.rhythm_issues.append(f"박자 점수 {result.rhythm_score:.1f}점: 전체적으로 박자가 원곡보다 느리게 밀리는 경향이 있습니다.")
-        elif mean_diff < -30.0:
-            result.rhythm_issues.append(f"박자 점수 {result.rhythm_score:.1f}점: 전체적으로 박자가 원곡보다 성급하고 빠르게 연주되었습니다.")
+    # 박자 피드백 (rhythm_score 기준)
+    if len(abs_onset) > 0:
+        score = result.rhythm_score
+        if score >= 90.0:
+            result.rhythm_issues.append(f"박자 점수 {score:.1f}점: 흔들림 없이 박자가 아주 정확합니다!")
+        elif score >= 70.0:
+            result.rhythm_issues.append(f"박자 점수 {score:.1f}점: 전체적으로 박자가 불안정하게 흔들립니다.")
         else:
-            result.rhythm_issues.append(f"박자 점수 {result.rhythm_score:.1f}점: 전체적으로 박자가 불안정하게 흔들립니다.")
-    elif len(abs_onset) > 0:
-        result.rhythm_issues.append(f"박자 점수 {result.rhythm_score:.1f}점: 흔들림 없이 박자가 아주 정확합니다!")
+            mean_diff = float(np.mean(onset_diffs_ms))
+            if mean_diff > 30.0:
+                result.rhythm_issues.append(f"박자 점수 {score:.1f}점: 전체적으로 박자가 원곡보다 느리게 밀리는 경향이 있습니다.")
+            elif mean_diff < -30.0:
+                result.rhythm_issues.append(f"박자 점수 {score:.1f}점: 전체적으로 박자가 원곡보다 성급하고 빠르게 연주되었습니다.")
+            else:
+                result.rhythm_issues.append(f"박자 점수 {score:.1f}점: 전체적으로 박자가 불안정하게 흔들립니다.")
 
     return result
