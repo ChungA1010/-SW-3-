@@ -1,180 +1,214 @@
-# OSS-Project
+# 기타 이펙터 톤 매칭 & 연주 피드백 시스템
 
-공개소프트웨어 프로젝트 저장소입니다.  
-본 프로젝트는 Git/GitHub 기반 협업 방식을 학습하고, 팀원들과 함께 기능을 개발 및 관리하는 것을 목표로 합니다.
-
----
-
-## 1. 프로젝트 소개
-
-### 프로젝트명
-OSS-Project
-
-### 프로젝트 개요
-이 프로젝트는 Python 기반으로 구현된 프로그램입니다.  
-팀원들과 함께 GitHub를 활용하여 기능 개발, 버그 수정, 문서화, 브랜치 관리, 병합 과정을 수행합니다.
-
-### 개발 목표
-- Git/GitHub 협업 방식 익히기
-- 브랜치 전략을 활용한 팀 개발 경험 쌓기
-- Commit Convention 통일하기
-- 프로젝트 문서화 및 유지보수성 향상
+기준 음원과 사용자 연주 음원을 비교하여  
+**이펙터 세팅 피드백**과 **연주 품질 피드백**을 JSON으로 반환하는 분석 파이프라인.
 
 ---
 
-## 2. 개발 환경
+## 실행 방법
 
-- Language: Python 3
-- Version Control: Git
-- Collaboration: GitHub
-- OS: macOS / Windows / Linux
-
----
-
-## 3. 실행 방법
-
-### 저장소 클론
 ```bash
-git clone [저장소 주소]
-cd OSS-Project
+python main.py --ref <기준음원.wav> --copy <연주음원.wav>
 ```
 
-### 프로그램 실행
-```bash
-python3 main.py
-```
+### 옵션
 
----
-
-## 4. 폴더 구조
-
-```text
-OSS-Project/
-├── main.py
-├── README.md
-└── .gitignore
-```
-
----
-
-## 5. 브랜치 전략
-
-본 프로젝트는 아래와 같은 브랜치 전략을 사용합니다.
-
-- `main` : 최종 안정 버전
-- `dev` : 개발 통합 브랜치
-- `type/name/task` : 팀원별 작업 브랜치
-
-### 브랜치 네이밍 규칙
-- 형식: `type/name/task`
-- 예시:
-  - `docs/mincheol/readme`
-  - `feat/jiyoon/user-input`
-  - `fix/seojun/index-error`
-  - `refactor/sohee/main-logic`
-
-### 작업 흐름
-1. `dev` 브랜치에서 최신 내용을 가져옵니다.
-2. 각 팀원은 자신의 작업에 맞는 브랜치를 생성합니다.
-3. 작업 완료 후 commit 및 push를 진행합니다.
-4. 작업 브랜치를 `dev`에 merge합니다.
-5. 작업이 끝난 브랜치는 삭제합니다.
-6. 최종 점검 후 `dev`를 `main`에 merge합니다.
-
----
-
-## 6. Commit Convention
-
-commit message 형식은 아래와 같이 통일합니다.
-
-```text
-[파트] Type: 변경 내용
-```
-
-### 파트 구분
-- `[AI]` : AI 관련 작업
-- `[BE]` : 백엔드 관련 작업
-- `[FE]` : 프론트엔드 관련 작업
-
-### 사용 가능한 Type
-- `Feat` : 새로운 기능 구현  
-  예) 이미지 업로드, 알림 발송
-- `Fix` : 버그 및 오류 수정
-- `Design` : UI/UX 디자인 수정  
-  예) React 컴포넌트 스타일링
-- `AI` : 데이터셋 처리, 모델 학습, 성능 평가 관련 작업
-- `Refactor` : 코드 로직 개선  
-  기능 변화는 없지만 코드 품질 향상
-- `Docs` : 문서 작성 및 수정  
-  예) README, 회의록, API 명세서
-- `Chore` : 빌드 설정, 패키지 설치, 환경 변수 설정 등 단순 작업
-- `Test` : 테스트 코드 작성 및 검증
-
-### 예시
-```text
-[BE] Feat: 회원정보 저장 기능 추가
-[FE] Feat: 사용자 기간 입력 기능 추가
-[BE] Feat: 사용자 로그인 기능 추가
-[BE] Feat: 사용자 회원가입 기능 추가
-[FE] Design: 메인 화면 버튼 스타일 수정
-[AI] AI: 데이터 전처리 코드 추가
-[BE] Fix: 로그인 예외 처리 오류 수정
-[FE] Docs: README 실행 방법 수정
-[BE] Refactor: 회원가입 함수 분리
-[FE] Test: 입력 폼 검증 테스트 추가
-[BE] Chore: requirements.txt 패키지 정리
-```
-
----
-
-## 7. 협업 규칙
-
-- `main` 브랜치에는 직접 commit하지 않습니다.
-- 모든 작업은 `dev` 브랜치에서 분기한 작업 브랜치에서 진행합니다.
-- 작업 브랜치 이름은 `type/name/task` 형식을 따릅니다.
-- commit 메시지는 `[파트] Type: 변경 내용` 형식을 따릅니다.
-- merge 전 코드 및 변경 사항을 확인합니다.
-- 의미 없는 commit 메시지(`수정`, `업데이트`, `test`)는 지양합니다.
-
----
-
-## 8. 향후 계획
-
-- [ ] 기본 기능 구현
-- [ ] 예외 처리 추가
-- [ ] 테스트 코드 작성
-- [ ] README 보완
-- [ ] 최종 발표 자료 정리
-
----
-
-## 9. 라이선스
-
-본 프로젝트는 공개소프트웨어 수업 목적의 프로젝트입니다.  
-필요 시 적절한 오픈소스 라이선스를 추가할 수 있습니다.
-
----
-
-## 10. SW-3: 기타 이펙터 톤 매칭 피드백 시스템
-
-### 평가 결과
-
-100쌍 무작위 샘플링 × 3회 (seed 1, 2, 3) 평균:
-
-| 축 | 이펙터 | 정확도 |
+| 옵션 | 설명 | 기본값 |
 |---|---|---|
-| Drive | dist | 75% ± 3% |
-| Space | delay | 89% ± 2% |
-| Phase | phaser | 100% (on/off만 판정, 강도 추정 안 함) |
-| **Overall** | — | **66% ± 5%** |
+| `--ref` | 기준 음원 경로 (필수) | — |
+| `--copy` | 비교 음원 경로 (필수) | — |
+| `--active-effects` | 이펙터 목록 override (예: `dist delay`) | 파일명 자동 감지 |
+| `--sr` | 샘플링 레이트 | `22050` |
+| `--save` | 결과 JSON 저장 경로 | — |
 
-### 이펙터 조합별 정확도
+### 실행 예시
 
-| 조합 | 정확도 |
+```bash
+python main.py --ref play/clean_solo_2.wav --copy play/drive_solo_2.wav
+python main.py --ref ref.wav --copy user.wav --active-effects dist delay --save result.json
+```
+
+---
+
+## 출력 형식
+
+```json
+{
+  "reference_path": "play/clean_solo_2.wav",
+  "copy_path": "play/drive_solo_2.wav",
+  "effect_feedback": {
+    "overall_similarity": 0.85,
+    "axes": [
+      {
+        "axis": "drive",
+        "reference_amount": 70,
+        "copy_amount": 50,
+        "difference": -20,
+        "similarity": 0.78,
+        "action": "increase",
+        "message": "[드라이브] 원본보다 약합니다. 드라이브를 높여보세요.",
+        "features": []
+      }
+    ]
+  },
+  "playing_feedback": {
+    "tone": {
+      "overall_score": 82.5,
+      "grade": "A",
+      "issues": ["배음 구조가 원본보다 약합니다."],
+      "suggestions": ["Presence 노브를 올려보세요."],
+      "strengths": ["음정 정확도가 높습니다."]
+    },
+    "timeseries": {
+      "pitch_score": 88.0,
+      "rhythm_score": 72.0,
+      "combined_score": 81.6,
+      "grade": "A",
+      "pitch_mae_semitone": 0.75,
+      "onset_mae_ms": 95.0,
+      "issues": ["박자가 원곡보다 밀리는 경향이 있습니다."],
+      "suggestions": ["메트로놈에 맞춰 연습해보세요."],
+      "strengths": ["음정 정확도가 우수합니다."]
+    }
+  }
+}
+```
+
+### 등급 기준
+
+| 이펙터 피드백 `action` | 의미 |
 |---|---|
-| 단독 이펙터 | ~95% |
-| 2개 조합 | ~75% |
-| 3개 동시 (dist+delay+phaser) | ~64% |
+| `keep` | 현재 세팅 유지 |
+| `increase` | 이펙터 강도 높이기 |
+| `decrease` | 이펙터 강도 낮추기 |
 
-3개 이펙터가 동시에 모두 다른 강도일 때 cross-axis 오염으로 정확도 하락.  
-실제 사용 시나리오(한 번에 하나씩 조정)에서는 더 높은 정확도 기대.
+| 연주 피드백 `grade` | 점수 범위 |
+|---|---|
+| S | 90점 이상 (톤) / 95점 이상 (시계열) |
+| A | 80점 이상 (톤) / 85점 이상 (시계열) |
+| B | 65점 이상 (톤) / 70점 이상 (시계열) |
+| C | 50점 이상 |
+| D | 50점 미만 |
+
+---
+
+## 파일 구조
+
+```
+.
+├── main.py                        # CLI 진입점
+├── unified_pipeline.py            # 이펙터+연주 피드백 통합 함수
+│
+├── tone_match_model.py            # [이펙터 피드백] 핵심 모델
+│
+├── preprocessor.py                # [연주 피드백] 무음 제거 · RMS 정규화 · 길이 정렬
+├── feature_extractor.py           # [연주 피드백] librosa 피처 추출
+├── similarity.py                  # [연주 피드백] 코사인 유사도 계산
+├── feedback.py                    # [연주 피드백] 톤 피드백 리포트 생성
+│
+├── pipeline_timeseries.py         # [시계열 피드백] 1~4단계 순차 실행
+├── feature_extractor_timeseries.py# [시계열 피드백] 음정(pitch) · 온셋(onset) 추출
+├── timeseries_align.py            # [시계열 피드백] DTW 정렬
+├── timeseries_scoring.py          # [시계열 피드백] 오차 점수화
+├── feedback_timeseries.py         # [시계열 피드백] 시계열 피드백 리포트 생성
+│
+├── evaluate_tone_match.py         # 이펙터 모델 정확도 평가 스크립트
+└── diagnose_features.py           # 이펙터 모델 피처 기여도 분석 스크립트
+```
+
+---
+
+## 파이프라인 흐름
+
+```
+ref.wav ─┐
+          ├─▶ [이펙터 피드백] ToneMatchModel.compare()
+copy.wav ─┘      drive / space / phase 축별 강도 비교
+
+ref.wav ─┐
+          ├─▶ [전처리] 무음 제거 → RMS 정규화 → 길이 정렬
+copy.wav ─┘
+               │
+               ├─▶ [톤 분석] librosa 피처 → 코사인 유사도 → 피드백
+               │
+               └─▶ [시계열 분석] pitch/onset 추출 → DTW 정렬 → 오차 계산 → 피드백
+```
+
+---
+
+## 이펙터 피드백 상세
+
+`tone_match_model.py`의 `ToneMatchModel`이 세 축을 독립적으로 평가한다.
+
+| 축 | 감지 이펙터 | 핵심 피처 |
+|---|---|---|
+| Drive | dist · overdrive · fuzz | crest_factor, zcr, rms, spectral_bandwidth, harmonic_ratio |
+| Space | delay · reverb | energy_decay, spectral_flux_variance, sustain_ratio |
+| Phase | phaser · chorus · tremolo | on/off만 판정 (강도 추정 없음) |
+
+파일명에서 이펙터를 자동 감지하며, `active_effects` 인자로 override 가능.
+
+---
+
+## 연주 피드백 상세
+
+### 톤 분석 (`similarity.py`)
+
+| 피처 | 가중치 | 역할 |
+|---|---|---|
+| MFCC | 0.35 | 음색 / 공진 특성 |
+| Spectral Contrast | 0.18 | 배음 구조 |
+| BPM 유사도 | 0.10 | 템포 일치도 |
+| Spectral Centroid | 0.10 | 음색 밝기 |
+| Chroma | 0.08 | 음정 일치도 |
+| Duration 유사도 | 0.07 | 연주 길이 |
+| Tonnetz | 0.05 | 조성 공간 |
+| Spectral Bandwidth | 0.03 | 음색 넓이 |
+| Spectral Rolloff | 0.02 | 고음 분포 |
+| ZCR / RMS | 0.01×2 | 거칠기 / 다이나믹 |
+
+코사인 유사도에 0.75 threshold stretch 적용 → 변별력 확보.
+
+### 시계열 분석 (`pipeline_timeseries.py`)
+
+1. **피처 추출**: crepe 기반 pitch MIDI + librosa onset 시계열
+2. **DTW 정렬**: 연주 속도 차이를 보정하여 프레임 단위 매핑
+3. **오차 계산**: pitch MAE (반음) + onset MAE (ms)
+4. **점수화**: pitch 60% + rhythm 40% 가중 합산
+
+---
+
+## 평가 결과 (이펙터 모델)
+
+200쌍 무작위 샘플링 (seed=42):
+
+| 축 | 정확도 |
+|---|---|
+| Drive (dist) | 75% |
+| Space (delay) | 87% |
+| Phase (phaser) | 100% (on/off 판정) |
+| **전체** | **66%** |
+
+| 이펙터 조합 | 정확도 |
+|---|---|
+| 단독 | ~95% |
+| 2개 조합 | ~75% |
+| 3개 동시 | ~63% |
+
+3개 이펙터 동시 적용 시 cross-axis 오염으로 정확도 하락.  
+실제 사용 환경(이펙터 하나씩 조정)에서는 더 높은 정확도 기대.
+
+---
+
+## 의존성
+
+```
+librosa
+numpy
+scikit-learn
+crepe
+```
+
+```bash
+pip install -r requirements.txt
+```
