@@ -22,9 +22,6 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
-
 try:
     from tqdm import tqdm
     HAS_TQDM = True
@@ -302,6 +299,8 @@ def summarize(results: list[dict], n_candidates: int, elapsed_ms: float) -> None
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 def main() -> int:
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(
         description="ToneMatchModel 정확도 평가",
         formatter_class=argparse.RawDescriptionHelpFormatter,

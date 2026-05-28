@@ -24,9 +24,6 @@ from pathlib import Path
 
 import numpy as np
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
-
 try:
     from tqdm import tqdm
     HAS_TQDM = True
@@ -36,57 +33,7 @@ except ImportError:
 
 sys.path.insert(0, str(Path(__file__).parent))
 from tone_match_model import ToneMatchModel, EPSILON  # noqa: E402
-
-# evaluate_tone_match.py replaces sys.stdout at module level, which would close
-# the buffer already wrapped above.  Copy the two helpers instead of importing.
-# Source: evaluate_tone_match.py
-import itertools
-import re
-from dataclasses import dataclass
-
-_EFFECT_RE  = re.compile(r"(dist|delay|phaser)_(\d+)")
-_PLAY_RE    = re.compile(r"(powerchord|chord|solo)_(\d+)\.wav$", re.IGNORECASE)
-_EXCLUDE_RE = re.compile(r"(chorus|reverb|\+)")
-
-
-@dataclass
-class ParsedFile:
-    path: Path
-    play_type: str
-    play_idx: int
-    effects: dict[str, int]
-    effects_key: frozenset
-
-
-def parse_filename(path: Path) -> "ParsedFile | None":
-    name = path.name
-    if _EXCLUDE_RE.search(name):
-        return None
-    play_m = _PLAY_RE.search(name)
-    if not play_m:
-        return None
-    play_type = play_m.group(1).lower()
-    play_idx  = int(play_m.group(2))
-    effects: dict[str, int] = {
-        m.group(1): int(m.group(2)) for m in _EFFECT_RE.finditer(name)
-    }
-    if not effects:
-        return None
-    return ParsedFile(
-        path=path, play_type=play_type, play_idx=play_idx,
-        effects=effects, effects_key=frozenset(effects.keys()),
-    )
-
-
-def discover_and_group(audio_dir: Path) -> dict:
-    groups: dict = {}
-    for wav in sorted(audio_dir.glob("*.wav")):
-        pf = parse_filename(wav)
-        if pf is None:
-            continue
-        key = (pf.play_type, pf.play_idx, pf.effects_key)
-        groups.setdefault(key, []).append(pf)
-    return groups
+from evaluate_tone_match import ParsedFile, parse_filename, discover_and_group  # noqa: E402
 
 
 # ── Constants ──────────────────────────────────────────────────────────────────
@@ -171,12 +118,13 @@ def aggregate_features(
 
 # ── Rule map ───────────────────────────────────────────────────────────────────
 def get_rule_map(model: ToneMatchModel) -> dict[str, list[str]]:
-    """feature_name → [axis, ...] from each axis's FeatureRule list."""
+    """feature_name → [axis, ...] from each ACTIVE axis's FeatureRule list.
+    Phase is excluded — _build_phase_axis always returns keep (never scored).
+    """
     rule_map: dict[str, list[str]] = {}
     for axis, rules in [
         ("drive", model._drive_rules()),
         ("space", model._space_rules()),
-        ("phase", model._phase_rules()),
     ]:
         for rule in rules:
             rule_map.setdefault(rule.name, []).append(axis)
@@ -296,6 +244,8 @@ def write_csv(rows: list[dict], output_path: Path) -> None:
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 def main() -> int:
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(
         description="Feature-level cross-axis contamination diagnosis",
         formatter_class=argparse.RawDescriptionHelpFormatter,

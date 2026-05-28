@@ -2,6 +2,7 @@
 *.csv
 play/
 original/
+fb/
 
 # Python
 __pycache__/
