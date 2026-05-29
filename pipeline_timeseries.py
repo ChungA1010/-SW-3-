@@ -45,7 +45,7 @@ def run_timeseries_pipeline(ref_y: np.ndarray,
         ref_feat.pitch_times, user_feat.pitch_times, pitch_path,
     )
 
-    # 0529/음정 신뢰도 판정: ref·user . 어느 쪽이든 delay면 음정 hedge.
+    # 0529/음정 신뢰도 판정: ref·user . 어느 쪽이든 delay면 음정 hedge(~일것같다).
     pitch_reliable = (
         ref_feat.silence_ratio  >= DELAY_SILENCE_THRESHOLD
         and user_feat.silence_ratio >= DELAY_SILENCE_THRESHOLD

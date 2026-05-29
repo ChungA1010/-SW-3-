@@ -234,13 +234,13 @@ class ToneMatchModel:
             "amplitude_modulation":   float(np.std(rms) / (np.mean(rms) + EPSILON)),
             # Shared (Drive + Phase)
             "harmonic_ratio":         float(harmonic_energy / (harmonic_energy + percussive_energy)),
-            # Reverb (Space axis)
+            # Delay (Space axis)
             "energy_decay":           float(np.mean(tail) / (np.mean(early) + EPSILON)),
             "sustain_ratio":          float(np.mean(rms > voiced_threshold)),
             "spectral_flux_variance": float(np.var(flux_frames)),
             "spectral_flux":          float(np.mean(flux_frames)),
             "spectral_contrast":      float(np.mean(contrast)),
-            # Chorus (Phase axis)
+            # Phaser (Phase axis)
             "modulation_energy":      self._modulation_energy(rms, hop),
             "delta_mfcc_std":         float(np.mean(np.std(librosa.feature.delta(mfcc), axis=1))),
             "mfcc_modulation_variance": float(np.mean(np.var(mfcc, axis=1))),
@@ -283,7 +283,7 @@ class ToneMatchModel:
     ) -> AxisFeedback:
         """Phase 축은 강도를 추정하지 않음.
 
-        팀원의 effect classifier가 phaser on/off를 판정해서 연주자에게 알려주고,
+        effect classifier가 phaser on/off를 판정해서 연주자에게 알려주고,
         연주자는 그 결과대로 phaser를 켜고 연주하므로, ref와 copy의 phaser on/off 상태는
         항상 일치한다고 가정. 따라서 강도 차이는 피드백하지 않고 항상 keep을 반환.
 
