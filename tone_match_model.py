@@ -85,12 +85,14 @@ class ToneMatchModel:
         sample_rate: int = 32000,
         hop_length: int = 256,
         max_analysis_seconds: float = 20.0,
-        action_threshold: int = 20,
+        action_threshold: int = 40,   # 0529/테스트 기반 재조정: gap=25(1단계) 하단 경계
+        much_threshold: int = 60,     # 0529/테스트 기반 추가: gap=50+(2단계이상) 경계
     ) -> None:
         self.sample_rate = sample_rate
         self.hop_length = hop_length
         self.max_analysis_seconds = max_analysis_seconds
         self.action_threshold = action_threshold
+        self.much_threshold = much_threshold  # 0529/기존 하드코딩 30 대체
 
     # ------------------------------------------------------------------
     # Public API
@@ -434,10 +436,16 @@ class ToneMatchModel:
     # Action / message helpers
     # ------------------------------------------------------------------
 
-    def _action_from_difference(self, difference: int, threshold: int | None = None) -> str:
+    def _action_from_difference(
+        self,
+        difference: int,
+        threshold: int | None = None,
+        much_threshold: int | None = None,  # 0529/파라미터화: 기존 하드코딩 30 대체
+    ) -> str:
         t = threshold if threshold is not None else self.action_threshold
-        if difference > 30:   return "much_lower"
-        if difference < -30:  return "much_raise"
+        m = much_threshold if much_threshold is not None else self.much_threshold  # 0529
+        if difference > m:    return "much_lower"
+        if difference < -m:   return "much_raise"
         if difference > t:    return "lower"
         if difference < -t:   return "raise"
         return "keep"

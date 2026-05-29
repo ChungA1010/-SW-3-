@@ -12,6 +12,10 @@ class TimeSeriesErrors:
     pitch_score: float = 0.0          # 0~100
     rhythm_score: float = 0.0         # 0~100
 
+    # 0529/음정 점수 신뢰 가능 여부. delay(잔향)가 감지되면 False.
+    #       False면 pyin 음정 추적이 잔향에 교란돼 점수가 부정확하므로 '참고용'으로 다룬다.
+    pitch_reliable: bool = True
+
     pitch_issues: list[str] = field(default_factory=list)
     rhythm_issues: list[str] = field(default_factory=list)
 
@@ -33,9 +37,11 @@ def compute_timeseries_errors(
     aligned_user_onsets: np.ndarray,
     pitch_issue_threshold: float = 1.0,   # 반음
     onset_issue_threshold: float = 80.0,  # ms
+    pitch_reliable: bool = True,          # 0529/delay 감지 시 False로 호출 → 음정 hedge
 ) -> TimeSeriesErrors:
-    
+
     result = TimeSeriesErrors()
+    result.pitch_reliable = pitch_reliable  # 0529/
 
     # ── 1. 음정 오차 평가 ──
     both_voiced = np.isfinite(aligned_ref_midi) & np.isfinite(aligned_user_midi)
@@ -48,7 +54,13 @@ def compute_timeseries_errors(
 
     # 점수 기반 심플 음정 피드백
     if len(abs_errs) > 0:
-        if result.pitch_score >= 90.0:
+        if not pitch_reliable:
+            # 0529/delay(잔향) 감지 시: 음정 추적이 교란되므로 단정하지 않고 '가능성'으로 안내.
+            result.pitch_issues.append(
+                f"딜레이(잔향)의 영향으로 음정이 실제와 다르게 측정됐을 가능성이 있습니다. "
+                f"(추정 {result.pitch_score:.1f}점)"
+            )
+        elif result.pitch_score >= 90.0:
             result.pitch_issues.append(f"음정 점수 {result.pitch_score:.1f}점: 아주 정확하게 연주했습니다!")
         elif result.pitch_score >= 70.0:
             result.pitch_issues.append(f"음정 점수 {result.pitch_score:.1f}점: 대체로 맞지만 연주 중간에 틀린 음이 약간 섞여 있습니다.")

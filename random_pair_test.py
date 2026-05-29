@@ -219,13 +219,15 @@ def run_one_trial(
     print(f"drive/space 검증: {matched}/{verifiable} 일치")
 
     # ── 연주 피드백 출력 ──────────────────────────────
+    # 0529/구조 변경: playing_feedback가 평면(pitch/rhythm)으로 바뀌고 tone(음색) 리포트 제거됨.
     if tone_data is not None:
-        tone = tone_data["tone"]
-        ts   = tone_data["timeseries"]
+        ts = tone_data
         print("\n[연주 피드백]")
-        print(f"  톤   : {tone['overall_score']:.1f}% ({tone['grade']})")
-        print(f"  음정 : {ts['pitch_score']:.1f}점 (MAE {ts['pitch_mae_semitone']:.2f}반음)")
+        # 0529/delay면 음정이 부정확할 가능성 — 표시를 붙인다.
+        pitch_tag = "" if ts["pitch_reliable"] else " (delay 영향 가능성)"
+        print(f"  음정 : {ts['pitch_score']:.1f}점{pitch_tag} (MAE {ts['pitch_mae_semitone']:.2f}반음)")
         print(f"  박자 : {ts['rhythm_score']:.1f}점 (MAE {ts['onset_mae_ms']:.0f}ms)")
+        print(f"  종합 : {ts['combined_score']:.1f}점 ({ts['grade']})")
 
     return matched, verifiable
 

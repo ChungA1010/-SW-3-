@@ -19,6 +19,9 @@ class TimeSeriesFeatures:
     pitch_confidence: np.ndarray  # (M,) voiced 확률
     duration: float               # 전체 길이(초)
     bpm: float                    # 전체 평균 BPM
+    # 0529/음정 신뢰도 판정용: 무음 프레임 비율. delay가 노트 사이를 채우면 낮아진다.
+    #       실험상 dist/phaser=16~20%, delay=7~12%로 분리됨 → 게이팅(조건 통과 못하면 차단)에 사용.
+    silence_ratio: float = 0.0
 
 
 def hz_to_midi(hz: np.ndarray) -> np.ndarray:
@@ -50,6 +53,12 @@ def extract_timeseries(y: np.ndarray, sr: int = 22050,
     tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
     bpm = float(np.atleast_1d(tempo)[0])
 
+    # 0529/무음 비율: 최대 RMS의 5% 미만인 프레임의 비율.
+    #       delay(잔향)가 노트 사이 빈 구간을 채우면 이 값이 떨어진다.
+    rms = librosa.feature.rms(y=y)[0]
+    peak_rms = float(np.max(rms)) if rms.size else 0.0
+    silence_ratio = float(np.mean(rms < peak_rms * 0.05)) if peak_rms > 0 else 0.0
+
     return TimeSeriesFeatures(
         onset_times=onset_times,
         pitch_hz=f0,
@@ -58,4 +67,5 @@ def extract_timeseries(y: np.ndarray, sr: int = 22050,
         pitch_confidence=voiced_prob,
         duration=len(y) / sr,
         bpm=bpm,
+        silence_ratio=silence_ratio,
     )

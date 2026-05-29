@@ -18,11 +18,10 @@ from pathlib import Path
 import librosa
 
 from tone_match_model import ToneMatchModel
-from preprocessor import preprocess
-from feature_extractor import extract_all_features
-from similarity import compute_similarity
-from feedback import generate_feedback
 from pipeline_timeseries import run_timeseries_pipeline
+# 0529/연주 피드백에서 음색(tone) 리포트 제거 — 음색 분석은 이펙터 피드백(ToneMatchModel)과
+#       중복이라 삭제. 연주 피드백은 음정(pitch)·박자(rhythm) 시계열만 담당한다.
+#       이로써 preprocessor / feature_extractor / similarity / feedback import 불필요.
 
 
 def run_unified_feedback(
@@ -56,25 +55,10 @@ def run_unified_feedback(
         y_ref,  _ = librosa.load(ref_path,  sr=sr_playing, mono=True)
         y_copy, _ = librosa.load(copy_path, sr=sr_playing, mono=True)
 
-        # ── 3. 전처리 + 톤 분석 ──────────────────────────────────────
-        prep = preprocess(y_ref, y_copy, sr_playing)
-        feat_ref  = extract_all_features(prep["y_ref"],  sr_playing)
-        feat_copy = extract_all_features(prep["y_user"], sr_playing)
-
-        tempo_info = {
-            "ref_duration":  prep["ref_duration"],
-            "user_duration": prep["user_duration"],
-            "ref_bpm":       prep["ref_bpm"],
-            "user_bpm":      prep["user_bpm"],
-        }
-
-        sim_result  = compute_similarity(feat_ref, feat_copy, tempo_info=tempo_info)
-        tone_report = generate_feedback(sim_result, feat_ref, feat_copy, tempo_info=tempo_info)
-
-        # ── 4. 시계열 분석 (음정 · 박자) ─────────────────────────────
+        # ── 3. 연주 분석 (음정 · 박자 시계열) ────────────────────────
         ts_report, ts_errors = run_timeseries_pipeline(y_ref, y_copy, sr_playing)
 
-    # ── 5. 통합 반환 ────────────────────────────────────────────────
+    # ── 4. 통합 반환 ────────────────────────────────────────────────
     return {
         "reference_path": str(ref_path),
         "copy_path":      str(copy_path),
@@ -82,24 +66,17 @@ def run_unified_feedback(
             "overall_similarity": effect_result["overall_similarity"],
             "axes":               effect_result["axes"],
         },
+        # 0529/연주 피드백 = 음정(pitch) + 박자(rhythm) 시계열만. tone(음색) 리포트 제거.
         "playing_feedback": {
-            "tone": {
-                "overall_score": tone_report.overall_score,
-                "grade":         tone_report.grade,
-                "issues":        tone_report.issues,
-                "suggestions":   tone_report.suggestions,
-                "strengths":     tone_report.strengths,
-            },
-            "timeseries": {
-                "pitch_score":        ts_report.pitch_score,
-                "rhythm_score":       ts_report.rhythm_score,
-                "combined_score":     ts_report.combined_score,
-                "grade":              ts_report.grade,
-                "pitch_mae_semitone": ts_errors.pitch_mae_semitone,
-                "onset_mae_ms":       ts_errors.onset_mae_ms,
-                "issues":             ts_report.issues,
-                "suggestions":        ts_report.suggestions,
-                "strengths":          ts_report.strengths,
-            },
+            "pitch_score":        ts_report.pitch_score,
+            "rhythm_score":       ts_report.rhythm_score,
+            "combined_score":     ts_report.combined_score,
+            "grade":              ts_report.grade,
+            "pitch_reliable":     ts_report.pitch_reliable,  # 0529/False면 delay로 음정 부정확 가능성
+            "pitch_mae_semitone": ts_errors.pitch_mae_semitone,
+            "onset_mae_ms":       ts_errors.onset_mae_ms,
+            "issues":             ts_report.issues,
+            "suggestions":        ts_report.suggestions,
+            "strengths":          ts_report.strengths,
         },
     }
