@@ -2,6 +2,8 @@ from django.db import models
 from preprocessing.models import SeparatedTrack
 
 # Create your models here.
+
+
 class RecordedTrack(models.Model):
     source = models.ForeignKey(SeparatedTrack, 
                                on_delete=models.CASCADE,
@@ -19,7 +21,7 @@ class Effector(models.Model):
     source = models.ForeignKey(SeparatedTrack, 
                                on_delete=models.CASCADE,
                                related_name='effector_values')
-    distortion = models.CharField(
+    dist = models.CharField(
         max_length=3,
         choices=Level.choices,
         null=True,

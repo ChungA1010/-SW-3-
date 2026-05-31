@@ -4,7 +4,9 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import tempfile
 import os
+from django.shortcuts import get_object_or_404
 
+from .feedback.unified_pipeline import run_unified_feedback
 from preprocessing.views import upload_audio, upload_video
 
 # 전처리 함수 및 모델 클래스 임포트
@@ -72,11 +74,16 @@ def analyze_ai(request):
     #이펙터 값 데이터베이스에 저장
     result_data = json.loads(ai_result["result"]) # json response를 dict로 변환
     
+    
     dist = result_data.get("dist")
     delay = result_data.get("delay")
     phase = result_data.get("phase")
     
+    parent_track_id = prep_result.get("track_id") #외래키 id
+    separated_track = SeparatedTrack(id=parent_track_id)
+    
     effector = Effector(
+        source = separated_track,
         dist=dist,
         delay=delay,
         phase=phase
@@ -94,6 +101,7 @@ def analyze_ai(request):
 
     return JsonResponse({
         "success": True,
+        "source_id": prep_result.get("track_id"),
         "source_name":prep_result["original_name"],
         "predicted_effect": ai_result.get("result"),
         "guitar_stem_url": prep_result["stem_url"],
@@ -104,29 +112,46 @@ def analyze_ai(request):
 def return_feedback(request):
     if request.method != 'POST':
         return JsonResponse({"success": False, "message": "POST 요청만 허용됩니다."}, status=405)
-    if 'file' not in request.FILES:
-        return JsonResponse({"success": False, "message": "파일('file' key)이 누락되었습니다."}, status=400)
-    
+    if 'file' not in request.FILES or 'source_id' not in request.POST:
+        return JsonResponse({"success": False, "message": "파일이나 원본 ID가 누락되었습니다."}, status=400)
     uploaded_file = request.FILES['file']
-    
+    source_id = request.POST['source_id']
     
     try:
-        # (주의) 아까 만든 모델에 외래키(source)가 필수이므로, 
-        # 실제 구현 시에는 프론트에서 부모 ID를 받아와서 조회를 먼저 해야 합니다.
-        # 여기서는 예시로 가장 최근의 SeparatedTrack을 매핑했다고 가정하겠습니다.
-        dummy_source = SeparatedTrack.objects.latest('id') 
-
+        parent_track = get_object_or_404(SeparatedTrack, id=source_id)
         # 📌 3. 데이터베이스에 저장하기
         recorded_track = RecordedTrack(
-            source=dummy_source,
-            file=uploaded_file # 👈 장고 FileField는 UploadedFile 객체를 주면 알아서 파일로 저장합니다.
+            source=parent_track,
+            file=uploaded_file 
         )
         recorded_track.save()
+        
+        #추론된 이펙터 값 가져오기
+        effector = Effector.objects.filter(source=parent_track).first()
+        active_effects = []
+        
+        if effector:
+            # off 아닐 경우
+            if effector.dist != 'off':
+                active_effects.append("dist")
+            if effector.delay != 'off':
+                active_effects.append("delay")
+            if effector.phase != 'off':
+                active_effects.append("phaser") # 모델 내부 정규표현식은 phaser를 사용
+        
+        
+        ##디렉토리 구조 변경 및 피드백 관련 코드 추가됨 - 수정 예정
+        feedback_report = run_unified_feedback(
+            ref_path=parent_track.file.path, 
+            copy_path=recorded_track.file.path,
+            active_effects=active_effects
+        )
 
         # 📌 4. 프론트엔드가 기다리는 SimpleResponse 형태로 응답
         return JsonResponse({
             "success": True, 
-            "message": f"'{dummy_source.id}' 파일이 백엔드에 무사히 저장되었습니다!"
+            "message": "피드백 분석 완료!",
+            "feedback": feedback_report # 👈 모델이 리턴한 dict를 통째로 넘김
         })
 
     except Exception as e:

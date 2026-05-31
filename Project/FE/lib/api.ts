@@ -1,4 +1,4 @@
-import type { AnalysisResponse, SimpleResponse } from "@/lib/types";
+import type { AnalysisResponse, FeedbackResponse, AxisFeedback } from "@/lib/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
@@ -72,7 +72,7 @@ function withAbsoluteUrls(data: AnalysisResponse): AnalysisResponse {
 }
 
 
-export async function getFeedback(file: File, sourceID: number): Promise<SimpleResponse> {
+export async function getFeedback(file: File, sourceID: number): Promise<FeedbackResponse> {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("source_id", sourceID.toString());
@@ -87,5 +87,5 @@ export async function getFeedback(file: File, sourceID: number): Promise<SimpleR
     throw new Error(payload?.detail ?? payload?.message ?? "요청 처리 중 오류가 발생했습니다.");
   }
 
-  return (await response.json()) as SimpleResponse;
+  return (await response.json()) as FeedbackResponse;
 }

@@ -127,8 +127,9 @@ export function ResultView({ result }: { result: AnalysisResponse }) {
                     onClick={() => setIsRecordingMode(true)}
                     style={{ marginTop: '2rem' }}
                 >
-                    내 연주 녹음해서 비교하기
+                    내 연주와 비교하기
                 </button>
+
             </article>
         </div>
     );

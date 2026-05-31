@@ -51,6 +51,7 @@ def upload_audio(request):
     command = [
         sys.executable, '-m', 'demucs.separate',
         '-n', 'htdemucs',
+        #'--shifts','2',
         '-o', temp_output_dir,
         demucs_input_path
     ]
@@ -78,7 +79,8 @@ def upload_audio(request):
             "track_path": track.file.path, # AI 모델에 넣을 경로
             "stem_url": track.file.url,    # 프론트로 보낼 경로
             "original_name": os.path.basename(source_audio.file.name),
-            "original_url": source_audio.file.url
+            "original_url": source_audio.file.url,
+            "track_id": track.id
         }
 
     except Exception as e:
@@ -188,7 +190,8 @@ def upload_video(request):
             "track_path": track.file.path,
             "stem_url": track.file.url,
             "original_name": file_name,
-            "original_url": source_audio.file.url
+            "original_url": source_audio.file.url,
+            "track_id": track.id,
         }
             
     except Exception as e:

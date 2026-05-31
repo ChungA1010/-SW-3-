@@ -22,12 +22,64 @@ export type AnalysisResponse = {
   source_name: string;
   predicted_effect: string;
   predicted_effect_display_name: string;
-  confidence: string;         // 백엔드에서 "8.55%" 처럼 문자열로 넘어오므로 string으로 변경
+  confidence: string;
   guitar_stem_url: string;
   original_audio_url: string;
 };
 
-export type SimpleResponse = {
+// ----------------------------------------------------
+// 🎸 피드백 관련 타입 정의
+// ----------------------------------------------------
+
+export interface FeatureComparison {
+  feature: string;
+  reference_value: number;
+  copy_value: number;
+  delta: number;
+  percent_change: number;
+  expected_direction: string;
+  meaning: string;
+}
+
+export interface AxisFeedback {
+  axis: string;
+  reference_amount: number;
+  copy_amount: number;
+  difference: number;
+  similarity: number;
+  action: string;
+  message: string;
+  features: FeatureComparison[];
+}
+
+export interface EffectFeedback {
+  overall_similarity: number;
+  axes: AxisFeedback[];
+}
+
+//Tone과 Timeseries 뎁스가 사라지고 필드가 바로 노출되도록 수정
+export interface PlayingFeedback {
+  pitch_score: number;
+  rhythm_score: number;
+  combined_score: number;
+  grade: string;
+  pitch_reliable: boolean; // 추가됨
+  pitch_mae_semitone: number;
+  onset_mae_ms: number;
+  issues: string[];
+  suggestions: string[];
+  strengths: string[];
+}
+
+export interface UnifiedFeedback {
+  reference_path: string;
+  copy_path: string;
+  effect_feedback: EffectFeedback;
+  playing_feedback: PlayingFeedback;
+}
+
+export interface FeedbackResponse {
   success: boolean;
-  message?: string; // 백엔드에서 보내주는 안내 메시지 (선택 사항)
-};
+  message: string;
+  feedback?: UnifiedFeedback;
+}
