@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Header } from "@/components/Header";
 
 const SYSTEM_STEPS = [
   {
@@ -27,27 +28,14 @@ const SYSTEM_STEPS = [
 export default function OverviewPage() {
   return (
     <main className="archive-shell">
-      <header className="archive-header">
-        <div className="archive-brand">
-          <span className="archive-brand-mark" />
-          <div>
-            <p className="archive-brand-eyebrow">기타 이펙터</p>
-            <h1>개요</h1>
-          </div>
-        </div>
-        <nav className="archive-nav">
-          <Link href="/">입력</Link>
-          <Link href="/overview">개요</Link>
-        </nav>
-      </header>
+      <Header />
 
       <section className="archive-hero archive-hero-compact">
         <div className="archive-hero-copy">
-          <p className="section-eyebrow">개요</p>
           <h2>
-            시스템이
+            기타 이펙터
             <br />
-            어떻게 동작하는지
+            분석
           </h2>
         </div>
 
@@ -77,6 +65,16 @@ export default function OverviewPage() {
               <p>{step.description}</p>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section className="cta-section">
+        <div className="workspace-card cta-card">
+          <h2>지금 바로 분석을 시작해보세요</h2>
+          <p>오디오 파일이나 유튜브 링크를 입력하고 AI 기반 이펙터 분석을 체험해 보세요.</p>
+          <Link href="/input" className="cta-button">
+            입력 화면으로 이동
+          </Link>
         </div>
       </section>
     </main>

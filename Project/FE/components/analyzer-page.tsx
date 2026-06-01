@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
 
 import { analyzeFile, analyzeYoutube } from "@/lib/api";
+import { Header } from "./Header";
 import type { AnalysisResponse, TimelineSegment } from "@/lib/types";
 
 import { ResultView } from "./ResultView";
@@ -80,7 +81,7 @@ export function AnalyzerPage() {
 
   return (
     <>
-      <Header />
+      <Header onReset={() => setResult(null)} />
       <main className="archive-shell">
 
         <section id="input" className="workspace-grid workspace-grid-lowered">
@@ -169,7 +170,7 @@ export function AnalyzerPage() {
                   min="0"
                   value={endSec}
                   onChange={(e) => setEndSec(e.target.value)}
-                  placeholder="전체"
+                  placeholder="10.0"
                 />
               </label>
             </div>
@@ -207,23 +208,7 @@ export function AnalyzerPage() {
   );
 }
 
-function Header() {
-  return (
-    <header className="archive-header">
-      <div className="archive-brand">
-        <span className="archive-brand-mark" />
-        <div>
-          <p className="archive-brand-eyebrow">기타 이펙터</p>
-          <h1>이펙터 분석</h1>
-        </div>
-      </div>
-      <nav className="archive-nav">
-        <Link href="/">입력</Link>
-        <Link href="/overview">개요</Link>
-      </nav>
-    </header>
-  );
-}
+
 
 function assertFile(file: File | null): File {
   if (!file) {
@@ -236,7 +221,6 @@ function assertFile(file: File | null): File {
 function EmptyState() {
   return (
     <div className="empty-result-card">
-      <p className="section-eyebrow">대기</p>
       <h4>결과가 여기에 표시됩니다.</h4>
     </div>
   );
