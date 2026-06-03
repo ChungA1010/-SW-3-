@@ -23,10 +23,11 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('upload/', include('preprocessing.urls')),
-    path('ai/', include('ai.urls'))
+    path('ai/', include('ai.urls')),
+    path('history/', include('history.urls')),
 ]
 
 
-# 개발 모드(DEBUG=True)일 때만 미디어 파일을 서빙하도록 설정
+# 개발 모드(DEBUG=True)일 때만 미디어 파일을 빙하도록 설정
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

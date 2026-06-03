@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'preprocessing',
     'ai',
     'corsheaders',
+    'history'
 ]
 
 MIDDLEWARE = [

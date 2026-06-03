@@ -47,6 +47,9 @@ def generate_timeseries_feedback(
         )
     else:
         report.combined_score = ts_errors.rhythm_score
+        # 0601/delay 감지 시 combined_score가 박자만으로 바뀐다는 사실을 사용자가 알 수 있도록
+        #       issues에 텍스트로 명시. 프론트가 issues를 그대로 렌더링하므로 별도 필드 불필요.
+        report.issues.append("딜레이(잔향)가 감지되어 종합 점수는 박자 점수만으로 산출되었습니다.")
     report.grade = score_to_grade(report.combined_score)
 
     # ── Issues: 3단계에서 생성된 텍스트를 그대로 주입 ──
