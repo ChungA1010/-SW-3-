@@ -1,4 +1,5 @@
 import os
+import argparse
 import numpy as np
 import librosa
 from scipy.signal import hilbert
@@ -240,6 +241,62 @@ def compute_modulation_energy(y, sr):
     return float(energy_mod / total_energy)
 
 
+########## Additional Spectral Features ##########
+
+def compute_spectral_contrast(y, sr):
+    """Spectral contrast: average contrast across frequency bands (useful for distortion detection)"""
+    if len(y) == 0:
+        return 0.0
+    try:
+        contrast = librosa.feature.spectral_contrast(y=y, sr=sr)
+        return float(np.mean(contrast))
+    except Exception:
+        return np.nan
+
+
+########## MFCC and Derivatives ##########
+
+def compute_mfcc_features(y, sr, n_mfcc=13):
+    """Extract MFCC coefficients (useful for timbre analysis across effect types)"""
+    try:
+        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
+        features = {}
+        for i in range(1, n_mfcc + 1):
+            features[f'mfcc_{i}_mean'] = float(np.mean(mfcc[i-1, :]))
+            features[f'mfcc_{i}_std'] = float(np.std(mfcc[i-1, :]))
+        return features
+    except Exception:
+        return {f'mfcc_{i}_{stat}': np.nan for i in range(1, n_mfcc + 1) for stat in ['mean', 'std']}
+
+
+def compute_delta_mfcc_features(y, sr, n_mfcc=13):
+    """Extract delta MFCC (temporal derivatives of MFCC - useful for detecting modulation effects)"""
+    try:
+        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
+        delta_mfcc = librosa.feature.delta(mfcc)
+        features = {}
+        for i in range(1, n_mfcc + 1):
+            features[f'delta_mfcc_{i}_mean'] = float(np.mean(delta_mfcc[i-1, :]))
+            features[f'delta_mfcc_{i}_std'] = float(np.std(delta_mfcc[i-1, :]))
+        return features
+    except Exception:
+        return {f'delta_mfcc_{i}_{stat}': np.nan for i in range(1, n_mfcc + 1) for stat in ['mean', 'std']}
+
+
+def compute_chroma_features(y, sr):
+    """Extract chroma features (useful for harmonic content and pitch-related effects)"""
+    try:
+        chroma = librosa.feature.chroma_stft(y=y, sr=sr)
+        features = {
+            'chroma_mean': float(np.mean(chroma)),
+            'chroma_std': float(np.std(chroma))
+        }
+        return features
+    except Exception:
+        return {'chroma_mean': np.nan, 'chroma_std': np.nan}
+
+
+
 def extract_features(y, sr):
     features = {
         "rms": compute_rms(y),
@@ -261,8 +318,19 @@ def extract_features(y, sr):
         "spectral_flux": compute_spectral_flux(y, sr),
         "centroid_modulation_depth": compute_centroid_modulation_depth(y, sr),
         "spectral_flux_variance": compute_spectral_flux_variance(y, sr),
-        "modulation_energy": compute_modulation_energy(y, sr)
+        "modulation_energy": compute_modulation_energy(y, sr),
+        "spectral_contrast": compute_spectral_contrast(y, sr),
     }
+    
+    # Add MFCC features (13 coefficients * 2 stats = 26 features)
+    features.update(compute_mfcc_features(y, sr))
+    
+    # Add delta MFCC features (13 coefficients * 2 stats = 26 features)
+    features.update(compute_delta_mfcc_features(y, sr))
+    
+    # Add chroma features
+    features.update(compute_chroma_features(y, sr))
+    
     return features
 
 
@@ -286,18 +354,33 @@ if __name__ == "__main__":
     csv_dir = os.path.join(project_root, 'csv')
     os.makedirs(csv_dir, exist_ok=True)
 
+    parser = argparse.ArgumentParser(description="Extract audio features from pedalboard datasets")
+    parser.add_argument(
+        "--input-dir",
+        default=os.path.join("test_effector", "pedalboard", "Multi"),
+        help="Input directory (relative to project root)",
+    )
+    parser.add_argument(
+        "--output-csv",
+        default=None,
+        help="Output CSV path (relative to csv dir or absolute path)",
+    )
+    args = parser.parse_args()
+
     effector_dir = os.path.join(project_root, "test_effector")
-    subdir_path = os.path.join(effector_dir, "pedalboard", "play")
+    subdir_path = os.path.join(project_root, args.input_dir)
 
     if not os.path.exists(subdir_path):
         print(f"Directory {subdir_path} not found!")
         exit(1)
 
     wav_files = []
-    for entry in os.listdir(subdir_path):
-        full_path = os.path.join(subdir_path, entry)
-        if os.path.isfile(full_path) and entry.lower().endswith('.wav'):
-            wav_files.append(full_path)
+    for current_root, _, files in os.walk(subdir_path):
+        for entry in files:
+            if entry.lower().endswith('.wav'):
+                wav_files.append(os.path.join(current_root, entry))
+
+    wav_files.sort()
 
     if not wav_files:
         print(f"No wav files found in {subdir_path}! Exiting.")
@@ -310,31 +393,59 @@ if __name__ == "__main__":
         parts = name.split('_')
         if len(parts) > 0 and parts[0].lower() == 'pedalboard':
             parts = parts[1:]
-        effect = parts[0] if len(parts) > 0 else ''
-        
-        # Determine if this effect type expects intensity
-        e = effect.lower()
-        needs_intensity = 'clean' not in e  # Only non-clean effects have intensity
-        
-        # Parse intensity if expected
-        if needs_intensity and len(parts) > 1 and parts[1].isdigit():
-            intensity = parts[1]
-            play = '_'.join(parts[2:]) if len(parts) > 2 else ''
+
+        known_effects = {
+            'clean', 'dist', 'distortion', 'reverb', 'delay', 'chorus', 'phaser',
+            'overdrive', 'od', 'drive', 'phase'
+        }
+
+        effect_pairs = []
+        i = 0
+        while i + 1 < len(parts):
+            effect_token = parts[i].lower()
+            intensity_token = parts[i + 1]
+            if effect_token in known_effects and intensity_token.isdigit():
+                effect_pairs.append((parts[i], intensity_token))
+                i += 2
+            else:
+                break
+
+        if effect_pairs:
+            effect = '+'.join([e.lower() for e, _ in effect_pairs])
+            intensity = '_'.join([f"{e.lower()}{v}" for e, v in effect_pairs])
+            play = '_'.join(parts[i:]) if i < len(parts) else ''
         else:
+            effect = parts[0] if len(parts) > 0 else ''
             intensity = ''
             play = '_'.join(parts[1:]) if len(parts) > 1 else ''
-        
+
         # Determine top category
-        if 'clean' in e:
+        e = effect.lower()
+        cats = []
+        effect_tokens_for_category = e.split('+') if '+' in e else [e]
+        for token in effect_tokens_for_category:
+            if 'clean' in token:
+                cats.append('clean')
+            elif any(k in token for k in ('drive', 'dist', 'overdrive', 'od')):
+                cats.append('drive')
+            elif any(k in token for k in ('reverb', 'delay')):
+                cats.append('space')
+            elif any(k in token for k in ('phaser', 'chorus', 'phase')):
+                cats.append('phase')
+            else:
+                cats.append('unknown')
+
+        unique_cats = []
+        for c in cats:
+            if c not in unique_cats:
+                unique_cats.append(c)
+
+        if unique_cats == ['clean']:
             top = 'clean'
-        elif any(k in e for k in ('drive', 'dist', 'overdrive', 'od')):
-            top = 'drive'
-        elif any(k in e for k in ('reverb', 'delay')):
-            top = 'space'
-        elif any(k in e for k in ('phaser', 'chorus', 'phase')):
-            top = 'phase'
         else:
-            top = 'unknown'
+            order = ['drive', 'space', 'phase', 'unknown', 'clean']
+            ordered_cats = [c for c in order if c in unique_cats]
+            top = '+'.join(ordered_cats) if ordered_cats else 'unknown'
         return top, effect, intensity, play
 
     results = []
@@ -354,7 +465,18 @@ if __name__ == "__main__":
             row = [top_cat, spec_eff, intensity, play] + [features[k] for k in feature_keys]
             results.append(row)
 
-    csv_filename = os.path.join(csv_dir, "features_pedalboarded_handmade.csv")
+    if args.output_csv:
+        if os.path.isabs(args.output_csv):
+            csv_filename = args.output_csv
+        else:
+            csv_filename = os.path.join(csv_dir, args.output_csv)
+    else:
+        input_dir_name = os.path.basename(os.path.normpath(subdir_path)).lower()
+        if input_dir_name == 'multi':
+            csv_filename = os.path.join(csv_dir, "features_pedalboard_multi.csv")
+        else:
+            csv_filename = os.path.join(csv_dir, "features_pedalboarded_handmade.csv")
+
     with open(csv_filename, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         header = ["top_category", "effect_kind", "intensity", "play_type_and_number"] + feature_keys
