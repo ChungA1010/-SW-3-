@@ -28,6 +28,7 @@ export function Header({ onReset }: HeaderProps) {
             <nav className="archive-nav">
                 <Link href="/input" onClick={handleInputClick}>입력</Link>
                 <Link href="/overview">개요</Link>
+                <Link href="/history">분석 이력</Link>
             </nav>
         </header>
     );

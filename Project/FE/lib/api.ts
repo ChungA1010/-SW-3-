@@ -1,4 +1,4 @@
-import type { AnalysisResponse, FeedbackResponse, AxisFeedback } from "@/lib/types";
+import type { AnalysisResponse, FeedbackResponse, LogsResponse } from "@/lib/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
@@ -41,7 +41,8 @@ export async function analyzeFile(
 export async function analyzeYoutube(
   youtubeUrl: string,
   startSec?: number,
-  endSec?: number
+  endSec?: number,
+  customName?: string
 ): Promise<AnalysisResponse> {
   const response = await fetch(`${API_BASE_URL}/ai/predict/`, { // 동일한 AI 파이프라인으로 쏨!
     method: "POST",
@@ -51,7 +52,8 @@ export async function analyzeYoutube(
     body: JSON.stringify({
       url: youtubeUrl,  // 백엔드 form.cleaned_data['url']과 매핑
       start_sec: startSec,
-      end_sec: endSec
+      end_sec: endSec,
+      name: customName
     }),
   });
 
@@ -88,4 +90,18 @@ export async function getFeedback(file: File, sourceID: number): Promise<Feedbac
   }
 
   return (await response.json()) as FeedbackResponse;
+}
+
+
+
+export async function getAllLogs(): Promise<LogsResponse> {
+  const response = await fetch(`${API_BASE_URL}/history/`, {
+    method: "GET",
+  });
+
+  if (!response.ok) {
+    throw new Error("로그를 불러오는 데 실패했습니다.");
+  }
+
+  return (await response.json()) as LogsResponse;
 }

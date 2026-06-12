@@ -70,7 +70,8 @@ export function AnalyzerPage() {
           : await analyzeYoutube(
             youtubeUrl.trim(),
             parsedStart,
-            parsedEnd);
+            parsedEnd,
+            customName.trim());
       setResult(response);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "오류가 발생했습니다.");
@@ -127,7 +128,7 @@ export function AnalyzerPage() {
                     type="text"
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
-                    placeholder="미입력 시 원본 파일명 사용"
+                    placeholder="미입력 시 임의의 파일명 사용"
                   />
                 </label>
 
@@ -143,6 +144,14 @@ export function AnalyzerPage() {
                     value={youtubeUrl}
                     onChange={(event) => setYoutubeUrl(event.target.value)}
                     placeholder="https://www.youtube.com/watch?v=..."
+                  />
+                  <span>파일 이름 (선택)</span>
+                  <input
+                    className="field-input"
+                    type="text"
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                    placeholder="미입력 시 임의의 파일명 사용"
                   />
                 </label>
               </div>

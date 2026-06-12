@@ -83,3 +83,25 @@ export interface FeedbackResponse {
   message: string;
   feedback?: UnifiedFeedback;
 }
+
+// ================  로그 관련 응답 처리 =====================
+export interface PredictedEffect {
+  dist: string;
+  delay: string;
+  phase: string;
+}
+
+export interface AnalysisLog {
+  track_id: number;
+  source_info: {
+    source_id: string;
+    name: string;
+  };
+  file_path: string | null;
+  predicted_effect: PredictedEffect | null;
+}
+
+export interface LogsResponse {
+  success: boolean;
+  logs: AnalysisLog[];
+}
