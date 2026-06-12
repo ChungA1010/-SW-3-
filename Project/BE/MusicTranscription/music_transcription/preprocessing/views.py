@@ -115,6 +115,7 @@ def upload_video(request):
     url = form.cleaned_data['url']
     start_sec = form.cleaned_data.get('start_sec')
     end_sec = form.cleaned_data.get('end_sec')
+    custom_name = form.cleaned_data.get('name')
     
     temp_dir = os.path.join(settings.MEDIA_ROOT, 'yt_temp')
     os.makedirs(temp_dir, exist_ok=True)
@@ -140,7 +141,8 @@ def upload_video(request):
             downloaded_file = os.path.splitext(base_filename)[0] + '.wav'
         
         # SourceAudio에 저장
-        source_audio = SourceAudio()
+        source_audio = SourceAudio(name=custom_name) if custom_name else SourceAudio()
+        
         with open(downloaded_file, 'rb') as f:
             file_name = f"yt_{info_dict['id']}.wav"
             source_audio.file.save(file_name, File(f))
@@ -189,7 +191,7 @@ def upload_video(request):
             "success": True,
             "track_path": track.file.path,
             "stem_url": track.file.url,
-            "original_name": file_name,
+            "original_name": source_audio.name,
             "original_url": source_audio.file.url,
             "track_id": track.id,
         }

@@ -26,6 +26,7 @@ class SourceAudioForm(forms.ModelForm):
 
 class SourceVideoForm(forms.Form):
     url = forms.URLField(label="Youtube URL",required=True)
+    name = forms.CharField(label="Custom Name", required=False)
     start_sec = forms.FloatField(required=False, label="시작 시간(초)")
     end_sec = forms.FloatField(required=False, label="종료 시간(초)")
     
